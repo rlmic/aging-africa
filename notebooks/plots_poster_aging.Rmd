@@ -55,7 +55,9 @@ library(stringr)
 
 
 ssa = read_dta("../data/preprocessed/allcountries.dta")
+ssa$gen <- ssa$female
 ssa$female <- as.factor(ssa$female)
+
 ssa$age_group5 <- as.factor(ssa$age_group5)
 
 ssa = ssa %>% 
@@ -90,7 +92,6 @@ ssa$gender <- as.factor(ssa$female)
 ```
 
 
-
 ```{r echo=FALSE}
 
 theme_top <- function(
@@ -113,9 +114,7 @@ theme_top <- function(
       ),
     legend.key.size = unit(6,"line"), 
     strip.text = element_text(color = color, size=size_title),
-    axis.title.y = element_text(angle = 0),
-    axis.line.x = element_line(size = 0.5, linetype="solid", colour=color)
-
+    axis.title.y = element_text(angle = 0)
     )
 
   return (top)
@@ -182,14 +181,14 @@ get_count <- function(
 ){
   annot0 = ssa %>% 
   filter(
-    age==20 & inhh==1 & gender=='Male'
+    age==20 & gender=='Male'
     ) %>% 
   group_by(age_group5, country, gender) %>% 
   summarise(vari = mean(get(var), na.rm=TRUE))
   
   annot1 = ssa %>% 
     filter(
-      age>=20 & inhh==1 & !is.na(gender) 
+      age>=20 & !is.na(gender) 
       ) %>% group_by(country, gender) %>% 
     summarise(
       n = sum(!is.na(country)&!is.na(get(var)))
@@ -201,6 +200,46 @@ get_count <- function(
   
   return (count)
 }
+
+
+fac_row_popu <- function(
+    forma_theme,
+    colors=c("#8eb67d","#000C66"),
+    breaks=c("20","25","30", "35", "40", "45", "50", "55", "60", "65", "70", "75", "80"),
+    labels=c("20", "", "", "", "40", "", "",  "", "60", "", "", "", "80+")
+){
+  
+  dat = get_count("gender")
+
+  graph <- ssa %>%
+    filter(age>=20  & !is.na(gender)) %>%
+    group_by(country, age_group5, gender) %>%
+    tally() %>% 
+    ggplot(
+      aes(x = age_group5, y = n, colour = gender, group=gender)
+      ) + 
+    theme_minimal() +
+    geom_line(size = 0.8, aes(linetype=gender)) +
+    facet_nested(~country, scales='free_y', space="free_y") +
+    scale_color_manual(values = colors) +
+    scale_linetype_manual(values=c("solid", "longdash")) +
+    scale_x_discrete(
+      breaks=breaks,
+      labels=labels
+      ) +
+    geom_text(
+      data = dat, 
+      label=dat$n,
+      aes(label = paste0("N=", n), y = Inf, x  = -Inf),
+      vjust = 1.3,
+      colour="#14213D",
+      hjust = -0.2) +
+    forma_theme
+
+  
+  return (graph)
+}
+
 
 fac_row <- function(
     var,
@@ -214,7 +253,7 @@ fac_row <- function(
   
   graph <- ssa %>% 
     filter(
-      age>=20 & inhh==1 & !is.na(gender) 
+      age>=20 & !is.na(gender) 
       ) %>% 
     group_by(age_group5, country, gender) %>% 
     summarise(vari = mean(get(var), na.rm=TRUE)) %>% 
@@ -248,19 +287,18 @@ fac_row <- function(
 \begin{landscape}
 
 ```{r employmenthours, fig.cap="Employment. Age Group and Gender.", echo=FALSE, fig.height=20, fig.width=25}
-a <- fac_row("urban", theme_top()) + labs(y = "Urban Status\n(Proportion)")
-b <- fac_row("work_hrs", theme_middle()) + labs(y = "Employment\n(Hours)")
-c <- fac_row("work_any", theme_middle_wline()) + labs(y = "Employment\n(Proportion)")
-d <- fac_row("lives_alone", theme_middle_wline()) + ylim(0, 0.6) + labs(y = "Living Arrangements\nLives alone?\n(Proportion)")
-e <- fac_row("ill_inj", theme_middle()) + ylim(0, 0.6) + labs(y = "Health\nIllness or Injury?\n(Proportion)")
-f <- fac_row("ill_inj_stopactivity", theme_middle()) + ylim(0, 0.6) + labs(y = "Health\nStopped Activities\n(Proportion)")
-g <- fac_row("depressed", theme_bottom()) + ylim(0, 0.6) + labs(y = "Health\nDepression", x = "Age", caption = paste(str_wrap("*Measurements derive from the Living Standards Measurement Study (LSMS), except for the outcomes corresponding to South Africa and Ghana, which come from the National Income Dynamics Study (NIDS) and the Ghana Socioeconomic Panel Survey (GSPS, respectively.", 170), collapse = "\n" ), adj=+1)
-plot_grid(plotlist=list(a, b, c, d, e, f, g), ncol=1, align='v', rel_heights = c(10, 5, 5, 5, 5, 5, 7))
+a <- fac_row_popu( theme_top()) + labs(y = "Population\n(Count)")
+b <- fac_row("urban", theme_middle_wline()) + labs(y = "Urban Status\n(Proportion)")
+c <- fac_row("work_hrs", theme_middle()) + labs(y = "Employment\n(Hours)")
+d <- fac_row("work_any", theme_middle_wline()) + labs(y = "Employment\n(Proportion)")
+e <- fac_row("notmarried", theme_middle()) + ylim(0, 0.6) + labs(y = "Living Arrangements\nUnmarried\n(Proportion)")
+f <- fac_row("lives_alone", theme_middle_wline()) + ylim(0, 0.6) + labs(y = "Living Arrangements\nLives alone\n(Proportion)")
+g <- fac_row("ill_inj", theme_middle()) + ylim(0, 0.6) + labs(y = "Health\nIllness/Injury\n(Proportion)")
+h <- fac_row("ill_inj_stopactivity", theme_middle()) + ylim(0, 0.6) + labs(y = "Health\nStopped\nActivities\n(Proportion)")
+i <- fac_row("depressed", theme_bottom()) + ylim(0, 0.6) + labs(y = "Health\nDepression", x = "Age", caption = paste(str_wrap("*Measurements derive from the Living Standards Measurement Study (LSMS), except for the outcomes corresponding to South Africa and Ghana, which come from the National Income Dynamics Study (NIDS) and the Ghana Socioeconomic Panel Survey (GSPS, respectively.", 170), collapse = "\n" ), adj=+1)
+plot_grid(plotlist=list(a, b, c, d, e, f, g, h, i), ncol=1, align='v', rel_heights = c(10, 5, 5, 5, 5, 5, 5, 5, 7))
 
 ```
-
-
-
 
 
 \end{landscape}
