@@ -289,13 +289,13 @@ fac_row <- function(
 ```{r employmenthours, fig.cap="Employment. Age Group and Gender.", echo=FALSE, fig.height=20, fig.width=25}
 a <- fac_row_popu( theme_top()) + labs(y = "Population\n(Count)")
 b <- fac_row("urban", theme_middle_wline()) + labs(y = "Urban Status\n(Proportion)")
-c <- fac_row("work_hrs", theme_middle()) + labs(y = "Employment\n(Hours)")
-d <- fac_row("work_any", theme_middle_wline()) + labs(y = "Employment\n(Proportion)")
+c <- fac_row("work_any", theme_middle()) + labs(y = "Employment\n(Proportion)")
+d <- fac_row("work_hrs", theme_middle_wline()) + labs(y = "Employment\n(Hours)")
 e <- fac_row("notmarried", theme_middle()) + ylim(0, 0.6) + labs(y = "Living Arrangements\nUnmarried\n(Proportion)")
 f <- fac_row("lives_alone", theme_middle_wline()) + ylim(0, 0.6) + labs(y = "Living Arrangements\nLives alone\n(Proportion)")
 g <- fac_row("ill_inj", theme_middle()) + ylim(0, 0.6) + labs(y = "Health\nIllness/Injury\n(Proportion)")
 h <- fac_row("ill_inj_stopactivity", theme_middle()) + ylim(0, 0.6) + labs(y = "Health\nStopped\nActivities\n(Proportion)")
-i <- fac_row("depressed", theme_bottom()) + ylim(0, 0.6) + labs(y = "Health\nDepression", x = "Age", caption = paste(str_wrap("*Measurements derive from the Living Standards Measurement Study (LSMS), except for the outcomes corresponding to South Africa and Ghana, which come from the National Income Dynamics Study (NIDS) and the Ghana Socioeconomic Panel Survey (GSPS, respectively.", 170), collapse = "\n" ), adj=+1)
+i <- fac_row("depressed", theme_bottom()) + ylim(0, 0.6) + labs(y = "Psychological Health\nDepression", x = "Age", caption = paste(str_wrap("*Measurements derive from the Living Standards Measurement Study (LSMS), except for the outcomes corresponding to South Africa and Ghana, which come from the National Income Dynamics Study (NIDS) and the Ghana Socioeconomic Panel Survey (GSPS, respectively.", 170), collapse = "\n" ), adj=+1)
 plot_grid(plotlist=list(a, b, c, d, e, f, g, h, i), ncol=1, align='v', rel_heights = c(10, 5, 5, 5, 5, 5, 5, 5, 7))
 
 ```
