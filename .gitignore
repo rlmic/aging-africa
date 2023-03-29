@@ -1,0 +1,22 @@
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+*.Rhistory
+*.Rapp.history
+*.RData
+
+# Distribution / packaging
+data/
+.Python
+build/
+do/
+draft/
+literature/
+presentations/
+results/
