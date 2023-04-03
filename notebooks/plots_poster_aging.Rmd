@@ -22,8 +22,10 @@ knitr::opts_chunk$set(
 	fig.height = 4.5,
 	fig.width = 5,
 	message = FALSE,
-	warning = FALSE
+	warning = FALSE,
+  graphics.auto_pdf = FALSE
 	)
+
 ```
 
 
@@ -42,6 +44,8 @@ library(formattable)
 library(ggh4x)
 library(gridExtra)
 library(ggtext)
+library(CGPfunctions)
+
 
 library(ggtree)
 library(dplyr)
@@ -81,12 +85,19 @@ ssa = ssa %>%
          ~ 'GHANA', 
         country == 'saf'
         ~ 'SOUTH AFRICA',
-      TRUE ~ NA), 
-
+        country == 'uga'
+         ~ 'UGANDA',
+        TRUE ~ NA),
       work_hrs = case_when(
         work_hrs>=140 & work_hrs<=168 ~ 140,
         work_hrs>168 ~ NA,
-        TRUE ~ work_hrs
+        TRUE ~ work_hrs),
+      region = case_when(
+        country %in% c('ETHIOPIA', 'MALAWI', 'TANZANIA', 'UGANDA')
+         ~ 'EASTERN AFRICA',  
+        country  %in% c('GHANA', 'NIGERIA')
+         ~ 'WESTERN AFRICA',
+        TRUE ~ 'SOUTHERN AFRICA'
       ))
 ssa$gender <- as.factor(ssa$female)
 ```
@@ -95,9 +106,8 @@ ssa$gender <- as.factor(ssa$female)
 ```{r echo=FALSE}
 
 theme_top <- function(
-    size_text=15,
-    size_title=18,
-    size_legend=20,
+    size_text=20,
+    size_title=22,
     color="#14213D"
 ){
   top = theme(
@@ -105,14 +115,8 @@ theme_top <- function(
     strip.background = element_rect(fill="white"),
     axis.text.x = element_blank(),
     axis.ticks.x = element_blank(),
-    legend.position="top", 
-    legend.title=element_blank(),
+    legend.position="none", 
     text = element_text(size = size_text), 
-    legend.text = element_text(
-      margin = margin(t = size_legend, b = size_legend, unit = "pt"),
-      size=size_legend
-      ),
-    legend.key.size = unit(6,"line"), 
     strip.text = element_text(color = color, size=size_title),
     axis.title.y = element_text(angle = 0)
     )
@@ -121,7 +125,7 @@ theme_top <- function(
 }
 
 theme_middle <- function(
-    size_text=15,
+    size_text=20,
     size_title=15,
     color="#000C66"
 ){
@@ -140,7 +144,7 @@ theme_middle <- function(
 }
 
 theme_middle_wline <- function(
-    size_text=15,
+    size_text=20,
     size_title=15,
     color="#14213D"
 ){
@@ -160,14 +164,21 @@ theme_middle_wline <- function(
 }
 
 theme_bottom <- function(
-    size_text=15,
+    size_text=20,
     size_title=15,
+    size_legend=22,
     color="#000C66"
 ){
   bottom = theme(
     strip.background = element_blank(),
     strip.text.x = element_blank(), 
-    legend.position="none",
+    legend.position="bottom", 
+    legend.title=element_blank(),
+    legend.text = element_text(
+      margin = margin(t = size_legend, b = size_legend, unit = "pt"),
+      size=size_legend
+      ),
+    legend.key.size = unit(6,"line"), 
     text = element_text(size = size_text),
     strip.text = element_text(color=color, size=size_title),
     axis.title.y = element_text(angle = 0)
@@ -183,7 +194,7 @@ get_count <- function(
   filter(
     age==20 & gender=='Male'
     ) %>% 
-  group_by(age_group5, country, gender) %>% 
+  group_by(age_group5, country, gender, region) %>% 
   summarise(vari = mean(get(var), na.rm=TRUE))
   
   annot1 = ssa %>% 
@@ -206,21 +217,23 @@ fac_row_popu <- function(
     forma_theme,
     colors=c("#8eb67d","#000C66"),
     breaks=c("20","25","30", "35", "40", "45", "50", "55", "60", "65", "70", "75", "80"),
-    labels=c("20", "", "", "", "40", "", "",  "", "60", "", "", "", "80+")
+    labels=c("20", "", "", "", "40", "", "",  "", "60", "", "", "", "80+"),
+    size_count=6
+
 ){
   
   dat = get_count("gender")
 
   graph <- ssa %>%
     filter(age>=20  & !is.na(gender)) %>%
-    group_by(country, age_group5, gender) %>%
+    group_by(country, age_group5, gender, region) %>%
     tally() %>% 
     ggplot(
       aes(x = age_group5, y = n, colour = gender, group=gender)
       ) + 
     theme_minimal() +
-    geom_line(size = 0.8, aes(linetype=gender)) +
-    facet_nested(~country, scales='free_y', space="free_y") +
+    geom_line(size = 1.3, aes(linetype=gender)) +
+    facet_nested(~region+country, scales='free_y', space="free_y") +
     scale_color_manual(values = colors) +
     scale_linetype_manual(values=c("solid", "longdash")) +
     scale_x_discrete(
@@ -231,9 +244,11 @@ fac_row_popu <- function(
       data = dat, 
       label=dat$n,
       aes(label = paste0("N=", n), y = Inf, x  = -Inf),
-      vjust = 1.3,
+      vjust = 1,
       colour="#14213D",
-      hjust = -0.2) +
+      hjust = -0.2,
+      size = size_count
+      ) +
     forma_theme
 
   
@@ -246,7 +261,8 @@ fac_row <- function(
     forma_theme,
     colors=c("#8eb67d","#000C66"),
     breaks=c("20","25","30", "35", "40", "45", "50", "55", "60", "65", "70", "75", "80"),
-    labels=c("20", "", "", "", "40", "", "",  "", "60", "", "", "", "80+")
+    labels=c("20", "", "", "", "40", "", "",  "", "60", "", "", "", "80+"),
+    size_count=6
 ){
   
   dat = get_count(var)
@@ -255,14 +271,14 @@ fac_row <- function(
     filter(
       age>=20 & !is.na(gender) 
       ) %>% 
-    group_by(age_group5, country, gender) %>% 
+    group_by(age_group5, country, gender, region) %>% 
     summarise(vari = mean(get(var), na.rm=TRUE)) %>% 
     ggplot(
       aes(x = age_group5, y = vari, colour = gender, group=gender)
       ) + 
     theme_minimal() +
-    geom_line(size = 0.8, aes(linetype=gender)) +
-    facet_nested(~country, scales='free_y', space="free_y") +
+    geom_line(size = 1.3, aes(linetype=gender)) +
+    facet_nested(~region+country, scales='free_y', space="free_y") +
     scale_color_manual(values = colors) +
     scale_linetype_manual(values=c("solid", "longdash")) +
     scale_x_discrete(
@@ -273,9 +289,11 @@ fac_row <- function(
       data = dat, 
       label=dat$n,
       aes(label = paste0("N=", n), y = Inf, x  = -Inf),
-      vjust = 1.3,
+      vjust = 1,
       colour="#14213D",
-      hjust = -0.2) +
+      hjust = -0.2,
+      size = size_count
+      ) +
     forma_theme
 
   
@@ -286,19 +304,121 @@ fac_row <- function(
 
 \begin{landscape}
 
-```{r employmenthours, fig.cap="Employment. Age Group and Gender.", echo=FALSE, fig.height=20, fig.width=25}
+```{r employmenthours, fig.cap="Employment. Age Group and Gender.", echo=FALSE, fig.height=35, fig.width=20, dev = c("png", "tiff"), dpi=400}
 a <- fac_row_popu( theme_top()) + labs(y = "Population\n(Count)")
-b <- fac_row("urban", theme_middle_wline()) + labs(y = "Urban Status\n(Proportion)")
-c <- fac_row("work_any", theme_middle()) + labs(y = "Employment\n(Proportion)")
+b <- fac_row("urban", theme_middle_wline()) + ylim(0, 1) + labs(y = "Urban Status\n(Proportion)")
+c <- fac_row("work_any", theme_middle()) + ylim(0, 1) + labs(y = "Employment\n(Proportion)")
 d <- fac_row("work_hrs", theme_middle_wline()) + labs(y = "Employment\n(Hours)")
-e <- fac_row("notmarried", theme_middle()) + ylim(0, 0.6) + labs(y = "Living Arrangements\nUnmarried\n(Proportion)")
-f <- fac_row("lives_alone", theme_middle_wline()) + ylim(0, 0.6) + labs(y = "Living Arrangements\nLives alone\n(Proportion)")
-g <- fac_row("ill_inj", theme_middle()) + ylim(0, 0.6) + labs(y = "Health\nIllness/Injury\n(Proportion)")
-h <- fac_row("ill_inj_stopactivity", theme_middle()) + ylim(0, 0.6) + labs(y = "Health\nStopped\nActivities\n(Proportion)")
-i <- fac_row("depressed", theme_bottom()) + ylim(0, 0.6) + labs(y = "Psychological Health\nDepression", x = "Age", caption = paste(str_wrap("*Measurements derive from the Living Standards Measurement Study (LSMS), except for the outcomes corresponding to South Africa and Ghana, which come from the National Income Dynamics Study (NIDS) and the Ghana Socioeconomic Panel Survey (GSPS, respectively.", 170), collapse = "\n" ), adj=+1)
-plot_grid(plotlist=list(a, b, c, d, e, f, g, h, i), ncol=1, align='v', rel_heights = c(10, 5, 5, 5, 5, 5, 5, 5, 7))
+e <- fac_row("notmarried", theme_middle()) + ylim(0, 1) + labs(y = "Living Arrangements\nUnmarried\n(Proportion)")
+f <- fac_row("lives_alone", theme_middle_wline()) + ylim(0, 1) + labs(y = "Living Arrangements\nLives alone\n(Proportion)")
+g <- fac_row("ill_inj", theme_middle()) + ylim(0, 1) + labs(y = "Health\nIllness/Injury\n(Proportion)")
+h <- fac_row("ill_inj_stopactivity", theme_middle()) + ylim(0, 1) + labs(y = "Health\nStopped\nActivities\n(Proportion)")
+i <- fac_row("depressed", theme_bottom()) + ylim(0, 1) + labs(y = "Psychological Health\nDepression", x = "Age", caption = paste(str_wrap("*Measurements derive from the Living Standards Measurement Study (LSMS), except for the outcomes corresponding to South Africa and Ghana, which come from the National Income Dynamics Study (NIDS) and the Ghana Socioeconomic Panel Survey (GSPS, respectively.", 170), collapse = "\n" ), adj=+1)
+plot_grid(plotlist=list(a, b, c, d, e, f, g, h, i), ncol=1, align='v', rel_heights = c(7, 5, 5, 5, 5, 5, 5, 5, 13))
 
 ```
 
 
 \end{landscape}
+
+
+
+```{r echo=FALSE}
+projections = read_dta(
+  '../../../Demography of Aging in SSA/data/population_projections.dta'
+  )
+proj_pop = projections %>% 
+  rename(
+  '1990'= pop_60plus_1990, 
+  '2020'= pop_60plus_2020, 
+  '2050'= pop_60plus_2050
+  ) %>% select(
+  countryregion, '1990', '2020', '2050'
+)
+
+proj_pop = rapply(
+  object = proj_pop,
+  f = round,
+  classes = "numeric",
+  how = "replace",
+  digits = 0
+  ) 
+proj_pop = gather(
+  proj_pop,
+  measurement,
+  value,
+  '1990':'2050',
+  factor_key=TRUE
+  )
+proj_pop = proj_pop %>% 
+  filter(
+    countryregion!='World' & countryregion!='Sub-Saharan Africa'
+    )
+
+proj_grow = 
+  projections %>% 
+  rename(
+  '1990-2020'= growth_pop_60plus_1990to2020, 
+  '2020-2050'= growth_pop_60plus_2020to2050
+  ) %>% select(
+  countryregion, '1990-2020', '2020-2050'
+)
+
+proj_grow = rapply(
+  object = proj_grow,
+  f = round,
+  classes = "numeric",
+  how = "replace",
+  digits = 0
+  ) 
+proj_grow = gather(
+  proj_grow,
+  measurement,
+  value,
+  '1990-2020':'2020-2050',
+  factor_key=TRUE
+  )
+
+```
+
+```{r popplus60, echo=FALSE, fig.height=18, fig.width=10, dev = c("png", "tiff"), dpi=600}
+newggslopegraph(
+  dataframe = proj_pop,
+  Times = measurement,
+  Measurement = value,
+  Grouping = countryregion,
+  Title = "+60 population",
+  SubTitle = "Population (1000s)",
+  Caption = NULL,
+  DataTextSize = 5,
+  YTextSize = 5,
+  XTextSize = 24,
+  TitleTextSize = 35,
+  SubTitleTextSize = 25,
+  LineThickness = 1,
+  LineColor = c("#8eb67d", rep("#000C66",1), "#8eb67d", "#000C66", "#808080", rep("#8eb67d",2)),
+  WiderLabels = TRUE,
+  ThemeChoice = "minimal"
+  )
+```
+
+```{r growplus60, echo=FALSE, fig.height=18, fig.width=10, dev = c("png", "tiff"), dpi=600}
+newggslopegraph(
+  dataframe = proj_grow,
+  Times = measurement,
+  Measurement = value,
+  Grouping = countryregion,
+  Title = NULL,
+  SubTitle = "Growth in %",
+  Caption = NULL,
+  DataTextSize = 6,
+  SubTitleTextSize = 25,
+  YTextSize = 5,
+  XTextSize = 24,
+  TitleTextSize = 35,
+  LineThickness = 1,
+  LineColor = c(rep("#8eb67d",5), "#2E8B57", rep("#8eb67d",2), "#000C66", rep("#8eb67d",1)),
+  WiderLabels = TRUE,
+  ThemeChoice = "minimal"
+  )
+```
