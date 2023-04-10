@@ -239,42 +239,30 @@ fac_row_popu <- function(
     colors=c("#8eb67d","#000C66"),
     breaks=c("20","25","30", "35", "40", "45", "50", "55", "60", "65", "70", "75", "80"),
     labels=c("20", "", "", "", "40", "", "",  "", "60", "", "", "", "80+"),
-    size_count=8
+    size_count=12
 
 ){
   
   dat = get_count("gender")
 
   graph <- ssa %>%
-    filter(age>=20  & !is.na(gender)) %>%
-    group_by(country, age_group5, gender, region) %>%
-    tally() %>% 
-    ggplot(
-      aes(x = age_group5, y = n, colour = gender, group=gender)
+    filter(age>=20  & !is.na(gender))%>%  ggplot(
+      aes(x = age_group5, fill=gender)
       ) + 
     theme_minimal() +
-    geom_line(size = 3, aes(linetype=gender)) +
+    geom_bar(binwidth = 0.5, color  = "white", position = "dodge") +
     facet_nested(~region+country, scales='free_y', space="free_y") +
-    scale_color_manual(values = colors) +
-    scale_linetype_manual(values=c("solid", "longdash")) +
-    scale_x_discrete(
-      breaks=breaks,
-      labels=labels
-      ) +
+    scale_fill_manual("legend", values = c("Female" = "#8eb67d", "Male" = "#000C66"))+
     geom_text(
       data = dat, 
-      label=dat$n,
+      label = dat$n,
       aes(label = paste0("N=", n), y = Inf, x  = -Inf),
       vjust = 1,
       colour="#14213D",
       hjust = -0.2,
       size = size_count
-      ) +
-      geom_rect(aes(xmin = "60", xmax = Inf, ymin = -Inf, ymax = Inf),
-            alpha = 0.005,
-            fill = "#8eb67d") +
+      ) + 
     forma_theme
-
   
   return (graph)
 }
@@ -284,7 +272,7 @@ fac_row <- function(
     var,
     forma_theme,
     colors=c("#8eb67d","#000C66"),
-    size_count=8
+    size_count=12
 ){
   
   dat = get_count(var)
@@ -330,7 +318,7 @@ fac_row <- function(
 breaks=c("20","25","30", "35", "40", "45", "50", "55", "60", "65", "70", "75", "80")
 
 labels=c("20", "", "", "", "40", "", "",  "", "60", "", "", "", "80+")
-a <- fac_row_popu( theme_top()) + labs(y = "Population\n(Count)")+ scale_x_discrete(
+a <- fac_row_popu( theme_top()) + labs(y = "Population\n(Count)") + scale_x_discrete(
       breaks=breaks,
       labels=labels,
       position="top"
@@ -445,55 +433,4 @@ newggslopegraph(
   ThemeChoice = "minimal"
   )
 ```
-
-
-```{r}
-
-fac_row_popu_his <- function(
-    forma_theme,
-    colors=c("#8eb67d","#000C66"),
-    breaks=c("20","25","30", "35", "40", "45", "50", "55", "60", "65", "70", "75", "80"),
-    labels=c("20", "", "", "", "40", "", "",  "", "60", "", "", "", "80+"),
-    size_count=8
-
-){
-  
-  dat = get_count("gender")
-
-  graph <- ssa %>%
-    filter(age>=20  & !is.na(gender))%>%  ggplot(
-      aes(x = age_group5, fill=gender)
-      ) + 
-    theme_minimal() +
-    geom_bar(binwidth = 0.5, color  = "white", position = "dodge") +
-    facet_nested(~region+country, scales='free_y', space="free_y") +
-    scale_fill_manual("legend", values = c("Female" = "#8eb67d", "Male" = "#000C66"))+
-    geom_text(
-      data = dat, 
-      label=dat$n,
-      aes(label = paste0("N=", n), y = Inf, x  = -Inf),
-      vjust = 1,
-      colour="#14213D",
-      hjust = -0.2,
-      size = size_count
-      ) +
-    forma_theme +
-          geom_rect(aes(xmin = "60", xmax = Inf, ymin = -Inf, ymax = Inf),
-            alpha = 0.005,
-            fill = "#8eb67d") 
-
-  
-  return (graph)
-}
-```
-
-
-
-```{r prie, fig.cap="Employment. Age Group and Gender.", echo=FALSE, fig.height=35, fig.width=40, dev = c("png", "tiff"), dpi=50}
-
-fac_row_popu_his( theme_top()) + labs(y = "Population\n(Count)")
-
-```
-
-
 
