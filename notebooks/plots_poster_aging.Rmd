@@ -108,7 +108,7 @@ ssa$gender <- as.factor(ssa$female)
 theme_top <- function(
     size_text=35,
     size_title=32,
-    size_legend=55,
+    size_legend=32,
     color="#14213D"
 ){
   top = theme(
@@ -182,7 +182,7 @@ theme_middle_wline <- function(
 theme_bottom <- function(
     size_text=35,
     size_title=15,
-    size_legend=55,
+    size_legend=32,
     color="#000C66"
 ){
   bottom = theme(
@@ -318,7 +318,7 @@ fac_row <- function(
 breaks=c("20","25","30", "35", "40", "45", "50", "55", "60", "65", "70", "75", "80")
 
 labels=c("20", "", "", "", "40", "", "",  "", "60", "", "", "", "80+")
-a <- fac_row_popu( theme_top()) + labs(y = "Population\n(Count)") + scale_x_discrete(
+a <- fac_row_popu( theme_top()) + labs(y = "Observations \n(Count)") + scale_x_discrete(
       breaks=breaks,
       labels=labels,
       position="top"
@@ -363,7 +363,7 @@ i <- fac_row("depressed", theme_bottom()) + ylim(0, 1) + labs(y = "Psychological
       labels=labels,
       position="bottom"
       )
-plot_grid(plotlist=list(a, b, c, d, e, f, g, h, i), ncol=1, align='v', rel_heights = c(12, 7, 5, 6.5, 5, 6.5, 5, 5, 12))
+plot_grid(plotlist=list(a, b, c, d, e, f, g, h, i), ncol=1, align='v', rel_heights = c(12, 7, 5, 6.5, 5, 6.5, 5, 5, 10))
 
 ```
 
