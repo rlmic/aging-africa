@@ -434,3 +434,234 @@ newggslopegraph(
   )
 ```
 
+
+```{r}
+dat = read_dta('../../../Demography of Aging in SSA/data/policyenvironment.dta')
+
+dat = dat %>% 
+  filter((country!="Low & middle income") & (country!="Middle income") & (country!="Low income") & (country!="Sub-Saharan Africa"))
+
+dat = dat %>% select('country', 'physicians', 'hospbeds', 'govtexpgdp', 'oopexp', 'pension_coverage_oldage')
+
+dat <- dat[order(dat$govtexpgdp,decreasing=TRUE),]
+
+dat$cou = c(0,1,0,1,0,1,1,1,1,1)
+
+dat_1 = dat %>% filter(cou!=0)
+
+dat_1$govtexpgdp=dat_1$govtexpgdp
+
+dat_1$oopexp=-(dat_1$oopexp-100)
+
+dat_1$pension_coverage_oldage=dat_1$pension_coverage_oldage
+```
+
+```{r}
+dat_1 = dat_1 %>% select(govtexpgdp, oopexp, pension_coverage_oldage, hospbeds, physicians, country, cou)
+```
+
+```{r}
+dat_long = gather(dat_1, variable, value, govtexpgdp:physicians, factor_key=TRUE)
+
+dat_long = dat_long %>%                          # Applying row_number function
+  mutate(order = row_number())
+```
+
+```{r}
+theme_spac <- function(
+    size_text=10,
+    size_title=10,
+    size_legend=7,
+    color="#14213D"
+){
+  top = theme(
+    axis.title.x = element_blank(),
+    strip.background = element_rect(fill="white"),
+    #axis.text.x = element_blank(),
+    axis.text.y = element_text(color = "#14213D", size = size_text),  
+    #legend.position="top", 
+    legend.justification = "right",
+    axis.ticks.x = element_blank(),
+    #legend.title=element_blank(),
+    legend.text = element_text(
+      margin = margin(t = size_legend, b = size_legend, unit = "pt"),
+      size=size_legend
+      ),
+    legend.key.size = unit(2,"line"), 
+
+    text = element_text(size = size_text), 
+    strip.text = element_text(color = color, size=size_title),
+    axis.title.y = element_text(angle = 0),
+    panel.spacing = unit(1, "lines")
+
+    )
+}
+
+dat_0 = dat %>% filter(cou!=1)
+
+dat_0 = dat_0 %>% select(govtexpgdp, oopexp, pension_coverage_oldage, hospbeds, physicians, country, cou)
+
+dat_long_0 = gather(dat_0, variable, value, govtexpgdp:physicians, factor_key=TRUE)
+
+dat_long_0 = dat_long_0 %>%                          # Applying row_number function
+  mutate(order = row_number())
+```
+
+
+
+
+```{r}
+
+high_inco = data.frame(
+  variable = c("govtexpgdp", "oopexp", "pension_coverage_oldage", "hospbeds", "physicians"), 
+  value = c(7.722377, 13.63032, NA, 5.280971, 3.1600544),
+  type= c("high_inco", "high_inco", "high_inco", "high_inco", "high_inco")
+  )
+
+low_middle_inco = data.frame(
+  variable = c("govtexpgdp", "oopexp", "pension_coverage_oldage", "hospbeds", "physicians"), 
+  value = c(2.935153, 36.39225, NA, 2.520665, 1.5626701)
+  )
+
+sub_sahar_inco = data.frame(
+  variable = c("govtexpgdp", "oopexp", "pension_coverage_oldage", "hospbeds", "physicians"), 
+  value = c(2.015232, 29.98320, NA, 1.211261, 0.2332769)
+  )
+```
+
+
+```{r coor, echo=FALSE, fig.height=2.5, fig.width=15, dev = c("png", "tiff", "pdf"), dpi=300}
+
+new_labeller <- c(
+  `govtexpgdp`="Gov. Health Expenditure\n(Percentage of GDP)",
+  'oopexp'="Non-out of Pocket\nHealth Expenditure\n(Percentage)",
+  'pension_coverage_oldage'="Pension Coverage\n(Percentage)",
+  'hospbeds'="N° of Hospital Beds\n(Per 1,000)",
+  'physicians'="N° of Physicians\n(Per 1,000)"
+)
+ggplot(dat_long, aes(reorder(country, order), value)) + 
+  #eom_point() + 
+  geom_bar(stat = "identity", fill = "white", color="#1F271B", size=0.4) + 
+  facet_grid(~variable, scales = "free_x", labeller= as_labeller(new_labeller)) + 
+  ylab("") +
+  xlab("") + 
+  coord_flip() + 
+  geom_hline(data = high_inco, aes(yintercept = value, color="High Income Countries"))+#, linetype="twodash", size=0.5) +
+  geom_hline(data = low_middle_inco, aes(yintercept = value, color="Low-middle Income Countries"))+#, linetype="dotdash", size=0.5)+
+  geom_hline(data = sub_sahar_inco, aes(yintercept = value, color="Sub-saharan African Countries"))+#, linetype="longdash", size=0.5) +
+  guides(color=guide_legend(title="Regions (Avg)"))+
+  scale_color_manual("Regions (Avg)", values = c("#000C66", "#800000", "#E1AD01" )) +
+  #scale_linetype_manual("Regions (Avg)", values=c("twodash", "dotdash", "longdash")) +
+  theme_minimal() +
+  theme_spac() 
+
+
+
+```
+
+
+```{r coor_2, echo=FALSE, fig.height=3.4, fig.width=15, dev = c("png", "tiff", "pdf"), dpi=300}
+
+new_labeller <- c(
+  `govtexpgdp`="Gov. Health Expenditure\n(Percentage of GDP)",
+  'oopexp'="Non-out of Pocket\nHealth Expenditure\n(Percentage)",
+  'pension_coverage_oldage'="Pension Coverage\n(Percentage)",
+  'hospbeds'="N° of Hospital Beds\n(Per 1,000)",
+  'physicians'="N° of Physicians\n(Per 1,000)"
+)
+n <-ggplot(dat_long_0, aes(reorder(country, order), value)) + 
+  #eom_point() + 
+  geom_bar(stat = "identity", fill = "white", color="#1F271B", size=0.4) + 
+  facet_grid(~variable, scales = "free_x", labeller= as_labeller(new_labeller)) + 
+  ylab("") +
+  xlab("") + 
+  coord_flip() + 
+  theme_minimal() +
+  theme_spac() 
+
+
+theme_spac_0 <- function(
+    size_text=10,
+    size_title=10,
+    size_legend=7,
+    color="#14213D"
+){
+  top = theme(
+    axis.title.x = element_blank(),
+    strip.background = element_blank(),
+    strip.text.x = element_blank(),
+    #axis.text.x = element_blank(),
+    axis.text.y = element_text(color = "#14213D", size = size_text),  
+    legend.position="None", 
+    legend.justification = "right",
+    axis.ticks.x = element_blank(),
+    legend.title=element_blank(),
+    legend.text = element_text(
+      margin = margin(t = size_legend, b = size_legend, unit = "pt"),
+      size=size_legend
+      ),
+    legend.key.size = unit(2,"line"), 
+
+    text = element_text(size = size_text), 
+    strip.text = element_text(color = color, size=size_title),
+    axis.title.y = element_text(angle = 0),
+    panel.spacing = unit(1, "lines")
+
+    )
+}
+
+theme_spac <- function(
+    size_text=10,
+    size_title=10,
+    size_legend=7,
+    color="#14213D"
+){
+  top = theme(
+    axis.title.x = element_blank(),
+    strip.background = element_rect(fill="white"),
+    #axis.text.x = element_blank(),
+    axis.text.y = element_text(color = "#14213D", size = size_text),  
+    #legend.position="top", 
+    legend.justification = "right",
+    axis.ticks.x = element_blank(),
+    #legend.title=element_blank(),
+    legend.text = element_text(
+      margin = margin(t = size_legend, b = size_legend, unit = "pt"),
+      size=size_legend
+      ),
+    legend.key.size = unit(2,"line"), 
+
+    text = element_text(size = size_text), 
+    strip.text = element_text(color = color, size=size_title),
+    axis.title.y = element_text(angle = 0),
+    panel.spacing = unit(1, "lines")
+
+    )
+}
+
+
+
+
+m<-ggplot(dat_long, aes(reorder(country, order), value)) + 
+  #eom_point() + 
+  geom_bar(stat = "identity", fill = "white", color="#1F271B", size=0.4) + 
+  facet_grid(~variable, scales = "free_x", labeller= as_labeller(new_labeller)) + 
+  ylab("") +
+  xlab("") + 
+  coord_flip() + 
+  geom_hline(data = high_inco, aes(yintercept = value, color="High Income Countries"), linetype="twodash", size=0.5, alpha=.0) +
+  geom_hline(data = low_middle_inco, aes(yintercept = value, color="Low-middle Income Countries"), linetype="dotdash", size=0.5, alpha=0)+
+  geom_hline(data = sub_sahar_inco, aes(yintercept = value, color="Sub-saharan African Countries"), linetype="longdash", size=0.5, alpha=0) +
+  guides(color=guide_legend(title="Regions (Avg)"))+
+  scale_color_manual("Regions (Avg)", values = c("white", "white", "white" )) +
+  scale_linetype_manual("Regions (Avg)", values=c("twodash", "dotdash", "longdash")) +
+  theme_minimal() +
+  theme_spac_0() 
+
+
+
+plot_grid(plotlist=list(n, m), ncol=1, align='v', rel_heights = c(14, 18))
+
+```
+
+
