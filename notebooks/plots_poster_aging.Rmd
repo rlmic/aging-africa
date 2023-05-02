@@ -59,6 +59,22 @@ library(stringr)
 
 
 ssa = read_dta("../data/preprocessed/allcountries.dta")
+
+ssa_agg = read_dta("../data/preprocessed/allcountries_means5year.dta")
+ssa_agg$gen <- ssa_agg$female
+ssa_agg$female <- as.factor(ssa_agg$female)
+ssa_agg$age_group5 <- as.factor(ssa_agg$age_group5)
+ssa_agg = ssa_agg %>% 
+    mutate(
+      female = case_when(
+      female==0
+       ~ 'Male',
+      female ==1
+      ~ 'Female',
+      TRUE ~ NA)
+    )
+ssa_agg$gender <- as.factor(ssa_agg$female)
+
 ssa$gen <- ssa$female
 ssa$female <- as.factor(ssa$female)
 
@@ -101,6 +117,8 @@ ssa = ssa %>%
       ))
 ssa$gender <- as.factor(ssa$female)
 ```
+
+
 
 
 ```{r echo=FALSE}
@@ -268,6 +286,7 @@ fac_row_popu <- function(
 }
 
 
+
 fac_row <- function(
     var,
     forma_theme,
@@ -310,14 +329,111 @@ fac_row <- function(
   return (graph)
 }
 
+library(reshape2)
+
+ssa_agg = melt(ssa_agg,
+        # ID variables - all the variables to keep but not split apart on
+    id.vars=c("gender", "age_group5"),
+        # The source columns
+    measure.vars=c("married", "depressed", "healthinsurance_ever", "ill_inj",  "ill_inj_stopactivity", "urban", "lives_alone", "work_any", "notmarried"),
+        # Name of the destination column that will identify the original
+        # column that the measurement came from
+    variable.name="condition",
+    value.name="measurement"
+)
+
 ```
+
+
+
+```{r echo=FALSE}
+
+theme_top_spec <- function(
+    size_text=35,
+    size_title=32,
+    size_legend=32,
+    color="#14213D"
+){
+  top = theme(
+    #axis.title.x = element_blank(),
+    #strip.background = element_rect(fill="white"),
+    #axis.text.x = element_blank(),
+    #axis.text.y = element_text(color = "#14213D", size = size_text),  
+    legend.position="top", 
+    legend.justification = "right",
+    #axis.ticks.x = element_blank(),
+    legend.title=element_blank(),
+    legend.text = element_text(
+      margin = margin(t = size_legend, b = size_legend, unit = "pt"),
+      size=size_legend
+      ),
+    legend.key.size = unit(6,"line"), 
+
+    text = element_text(size = size_text), 
+    strip.text = element_text(color = color, size=size_title),
+    axis.title.y = element_text(angle = 0),
+    panel.spacing = unit(3, "lines"),
+    # Change horizontal spacing between facets
+
+  # Change vertical spacing between facets
+    panel.spacing.y = unit(8, "lines"),
+    strip.text.y.left = element_text(angle = 0)
+
+    )
+
+  return (top)
+}
+
+
+fac_row_agg <- function(
+    forma_theme,
+    colors=c("#8eb67d","#000C66"),
+    size_count=12
+){
+  
+  condition.labs <- c("Living Arrangements \nMarried \n (Proportion)", "Physocological Health \n (Depression)", "Health\nInsurance\n(Proportion)", "Health\nIllness/Injury\n(Proportion)", "Health\nStopped\nActivities\n(Proportion)", "Urban Status\n(Proportion)", "Living Arrangements\nLives alone\n(Proportion)", "Employment\n(Proportion)", "Living Arrangements \nUnmarried \n (Proportion)")
+  names(condition.labs) <- c("married", "depressed", "healthinsurance_ever", "ill_inj",  "ill_inj_stopactivity", "urban", "lives_alone", "work_any", "notmarried")
+  graph <- ssa_agg %>% 
+    group_by(age_group5, gender) %>% 
+    filter(!age_group5  %in% c('0', '5', '10', '15')) %>% 
+    ggplot(
+      aes(x = age_group5, y = measurement, colour = gender, group=gender)
+      ) + 
+    facet_nested(condition ~. , scales='free_y', space="free_y", switch = "y", labeller = labeller(condition = condition.labs)) +
+    theme_minimal() +
+    geom_line(size = 3, aes(linetype=gender)) +
+    scale_color_manual(values = colors) +
+    scale_linetype_manual(values=c("solid", "longdash"))+
+    geom_rect(aes(xmin = "60", xmax = Inf, ymin = -Inf, ymax = Inf),
+            alpha = 0.005,
+            fill = "#8eb67d") +
+    forma_theme
+
+  
+  return (graph)
+}
+
+  
+```
+
 
 \begin{landscape}
 
-```{r employmenthours, fig.cap="Employment. Age Group and Gender.", echo=FALSE, fig.height=35, fig.width=40, dev = c("png", "tiff"), dpi=400}
+```{r meas_agg, fig.cap="Employment. Age Group and Gender. (Agg)", echo=FALSE, fig.height=35, fig.width=15, dev = c("png", "tiff"), dpi=400}
 breaks=c("20","25","30", "35", "40", "45", "50", "55", "60", "65", "70", "75", "80")
 
 labels=c("20", "", "", "", "40", "", "",  "", "60", "", "", "", "80+")
+fac_row_agg(theme_top_spec())+ ylim(0, 1) + labs(y = "", x = "Age")+ 
+  scale_x_discrete(
+      breaks=breaks,
+      labels=labels,
+      position="bottom")
+```
+
+
+
+```{r employmenthours, fig.cap="Employment. Age Group and Gender.", echo=FALSE, fig.height=35, fig.width=40, dev = c("png", "tiff"), dpi=400}
+
 a <- fac_row_popu( theme_top()) + labs(y = "Observations \n(Count)") + scale_x_discrete(
       breaks=breaks,
       labels=labels,
