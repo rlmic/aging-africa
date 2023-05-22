@@ -437,7 +437,7 @@ fac_row <- function(
   
   dat = get_count(var)
   
-  if (test_expression) {
+  if (weighted) {
     data <- ssa %>% 
       filter(
         age>=20 & !is.na(gender) 
