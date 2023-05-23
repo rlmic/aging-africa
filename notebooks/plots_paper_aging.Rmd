@@ -28,7 +28,7 @@ knitr::opts_chunk$set(
 
 ```
 
-```{r include=FALSE}
+```{r set_up, include=FALSE}
 # Load & Install Packages
 
 install.packages(
@@ -53,6 +53,10 @@ pacman::p_load(
 
 )
 
+```
+
+
+```{r data, include=FALSE}
 # Load Data
 
 ssa = read_dta(
@@ -68,12 +72,35 @@ projections = read_dta(
   )
 
 dat = read_dta(
-  '../data/preprocessed/policyenvironment.dta'
+  '../data/preprocessed/summaryindicators.dta'
   )
 ```
 
 
-```{r include=FALSE}
+```{r clean_data, include=FALSE}
+
+countries = c(
+  "Ethiopia", 
+  "Ghana", 
+  "Malawi", 
+  "Nigeria", 
+  "South Africa",
+  "Tanzania",
+  "Uganda"
+  )
+
+var_sum = c(
+  "govtexpgdp", 
+  "lifeexpsixtytotal",
+  "oopexp", 
+  "socexpnohealth", 
+  "uhcidx",
+  "pensioncoverage",
+  "hospbeds",
+  "physicians",
+  "country", 
+  "cou"
+  )
 
 ssa_agg$gen <- ssa_agg$female
 ssa_agg$female <- as.factor(ssa_agg$female)
@@ -140,7 +167,6 @@ ssa_agg = melt(ssa_agg,
 )
 
 
-
 proj_pop = projections %>% 
   rename(
   '1990'= pop_60plus_1990, 
@@ -160,6 +186,7 @@ proj_pop = rapply(
   how = "replace",
   digits = 0
   ) 
+
 proj_pop = gather(
   proj_pop,
   measurement,
@@ -167,74 +194,114 @@ proj_pop = gather(
   '1990':'2050',
   factor_key=TRUE
   )
+
 proj_pop = proj_pop %>% 
   filter(
-    countryregion %in% 
-      c('South Africa', "Ghana", "Uganda", "Tanzania", "Nigeria", "Ethiopia", "Malawi")
+    countryregion %in% countries
     )
 
 proj_pop = proj_pop %>% mutate(
   value=value/1000
 ) %>%  mutate(across(c('value'), round, 1))
 
+dat = dat %>% select(
+  'country', 
+  'physicians', 
+  'hospbeds', 
+  'govtexpgdp', 
+  'oopexp', 
+  'pensioncoverage',
+  'socexpnohealth',
+  "lifeexpsixtytotal",
+  'uhcidx'
+  )
 
+dat <- dat[order(dat$govtexpgdp, decreasing=TRUE),]
 
-dat = dat %>% 
-  filter((country!="Low & middle income") & (country!="Middle income") & (country!="Low income") & (country!="Sub-Saharan Africa"))
+dat$cou = ifelse(
+  (dat$country %in% countries), 1, 0
+  )
 
-dat = dat %>% select('country', 'physicians', 'hospbeds', 'govtexpgdp', 'oopexp', 'pension_coverage_oldage')
-
-dat <- dat[order(dat$govtexpgdp,decreasing=TRUE),]
-
-dat$cou = c(0,1,0,1,0,1,1,1,1,1)
 
 dat_1 = dat %>% filter(cou!=0)
 
-dat_1$govtexpgdp=dat_1$govtexpgdp
-
 dat_1$oopexp=-(dat_1$oopexp-100)
 
-dat_1$pension_coverage_oldage = dat_1$pension_coverage_oldage
+dat_1 = dat_1 %>% select(
+  var_sum
+  )
 
-dat_1 = dat_1 %>% select(govtexpgdp, oopexp, pension_coverage_oldage, hospbeds, physicians, country, cou)
+dat_long = gather(
+  dat_1, 
+  variable, 
+  value, 
+  govtexpgdp:physicians, 
+  factor_key=TRUE
+  )
 
-dat_long = gather(dat_1, variable, value, govtexpgdp:physicians, factor_key=TRUE)
-
-dat_long = dat_long %>%                          # Applying row_number function
+dat_long = dat_long %>%                         
   mutate(order = row_number())
 
 
 dat_0 = dat %>% filter(cou!=1)
 
 dat_0 = dat_0 %>% select(
-  govtexpgdp, oopexp, pension_coverage_oldage, hospbeds, physicians, country, cou
+  var_sum
   )
 
 dat_0$oopexp=-(dat_0$oopexp-100)
-dat_long_0 = gather(dat_0, variable, value, govtexpgdp:physicians, factor_key=TRUE)
+
+dat_long_0 = gather(
+  dat_0, 
+  variable, 
+  value, 
+  govtexpgdp:physicians, 
+  factor_key=TRUE
+  )
 
 dat_long_0 = dat_long_0 %>%
   mutate(order = row_number())
 
-high_inco = data.frame(
-  variable = c("govtexpgdp", "oopexp", "pension_coverage_oldage", "hospbeds", "physicians"), 
-  value = c(7.722377, 86.36968, NA, 5.280971, 3.1600544),
-  type= c("high_inco", "high_inco", "high_inco", "high_inco", "high_inco")
-  )
+high_inco = dat %>%
+    filter(str_detect(country, 'HIC')) %>% 
+    select(-cou)
 
-low_middle_inco = data.frame(
-  variable = c("govtexpgdp", "oopexp", "pension_coverage_oldage", "hospbeds", "physicians"), 
-  value = c(2.935153, 63.60775, NA, 2.520665, 1.5626701)
-  )
+low_middle_inco =  dat %>%
+    filter(str_detect(country, 'LMICs_nonSSA')) %>% 
+    select(-cou)
 
-sub_sahar_inco = data.frame(
-  variable = c("govtexpgdp", "oopexp", "pension_coverage_oldage", "hospbeds", "physicians"), 
-  value = c(2.015232, 70.01680, NA, 1.211261, 0.2332769)
-  )
+sub_sahar_inco =  dat %>%
+    filter(country=='Sub-Saharan Africa') %>% 
+    ##filter(str_detect(country, 'exclud')) %>% 
+    select(-cou)
+
+high_inco = gather(
+  high_inco,
+  variable, 
+  value, 
+  physicians:uhcidx, 
+  factor_key=TRUE
+)
+low_middle_inco = gather(
+  low_middle_inco,
+  variable, 
+  value, 
+  physicians:uhcidx, 
+  factor_key=TRUE
+)
+  
+sub_sahar_inco = gather(
+  sub_sahar_inco,
+  variable, 
+  value, 
+  physicians:uhcidx, 
+  factor_key=TRUE
+)
 ```
 
 
-```{r echo=FALSE}
+
+```{r functions, echo=FALSE}
 
 theme_spac <- function(
     size_text=23,
@@ -432,7 +499,7 @@ fac_row <- function(
     forma_theme,
     weighted=TRUE,
     colors=c("#8eb67d","#000C66"),
-    size_count=12,
+    size_count=12
 ){
   
   dat = get_count(var)
@@ -569,6 +636,104 @@ fac_row_agg <- function(
 }
 
  
+graph_agg_data_main <- function(
+      weighted=TRUE
+      ){
+  a <- fac_row_popu(theme_top()) + 
+  labs(y = "Observations \n(Count)") +
+  scale_x_discrete(
+      breaks=breaks,
+      labels=labels,
+      position="top"
+      )
+  b <- fac_row("urban", theme_bottom(), weighted) +
+    ylim(0, 1) +
+    labs(y = "Urban Status\n(Proportion)", x = "Age") + 
+    scale_x_discrete(
+        breaks=breaks,
+        labels=labels,
+        position="bottom"
+        ) + 
+    theme(legend.position = "none")
+  c <- fac_row("work_any", theme_middle(), weighted) +
+    ylim(0, 1) +
+    labs(y = "Employment\n(Proportion)")+ 
+    scale_x_discrete(
+        breaks=breaks,
+        labels=labels,
+        position="top"
+        )
+  
+  d <- fac_row("work_hrs", theme_bottom(), weighted) + 
+    labs(y = "Employment\n(Hours)", x = "Age")+ 
+    scale_x_discrete(
+        breaks=breaks,
+        labels=labels,
+        position="bottom"
+        )+  theme(legend.position = "none")
+  
+  e <- fac_row("notmarried", theme_middle()) + 
+    ylim(0, 1) + 
+    labs(y = "Living Arrangements\nUnmarried\n(Proportion)")+ 
+    scale_x_discrete(
+        breaks=breaks,
+        labels=labels,
+        position="top"
+        )
+  
+  f <- fac_row("lives_alone", theme_bottom(), weighted) + 
+    ylim(0, 1) + 
+    labs(y = "Living Arrangements\nLives alone\n(Proportion)", x = "Age")+ 
+    scale_x_discrete(
+        breaks=breaks,
+        labels=labels,
+        position="bottom"
+        )+  
+    theme(legend.position = "none")
+  
+  g <- fac_row("ill_inj", theme_middle(), weighted) + 
+    ylim(0, 1) + 
+    labs(y = "Health\nIllness & Injury\n(Proportion)")+ 
+    scale_x_discrete(
+        breaks=breaks,
+        labels=labels,
+        position="top"
+        )
+  
+  h <- fac_row("ill_inj_stopactivity", theme_middle(), weighted) +
+    ylim(0, 1) + labs(y = "Health\nStopped\nActivities\n(Proportion)")+
+    scale_x_discrete(
+        breaks=breaks,
+        labels=labels,
+        position="top"
+        )
+  
+  i <- fac_row("depressed", theme_middle(), weighted) + 
+    ylim(0, 1) +
+    labs(y = "Psychological Health\nDepression\n(Proportion)", x = "Age")+ 
+    scale_x_discrete(
+        breaks=breaks,
+        labels=labels,
+        position="top"
+        )
+  
+  j <- fac_row("disability", theme_bottom(), weighted) + 
+    ylim(0, 1) + 
+    labs(y = "Functional Limitations\n Disability\n(Proportion)", x = "Age")+
+    scale_x_discrete(
+        breaks=breaks,
+        labels=labels,
+        position="bottom"
+        ) + 
+    theme(legend.position = "none")
+  
+  plot_grid(
+    plotlist=list(a, b, c, d, e, f, g, h, i, j),
+    ncol=1, 
+    align='v', 
+    rel_heights=c(14, 7, 5, 6.5, 5, 6.5, 5, 5, 5, 7)
+    )
+}
  
 ```
 
@@ -591,97 +756,18 @@ fac_row_agg(theme_top_spec())+
 
 
 
-```{r outcomes_countries, fig.cap="Employment. Age Group and Gender. Countries", echo=FALSE, fig.height=60, fig.width=45, dev = c("png", "tiff", "pdf"), dpi=100}
+```{r outcomes_countries_weighted, fig.cap="Employment. Age Group and Gender. Countries. Weighted.", echo=FALSE, fig.height=60, fig.width=45, dev = c("png", "tiff", "pdf"), dpi=100}
 
-a <- fac_row_popu( theme_top()) + 
-  labs(y = "Observations \n(Count)") +
-  scale_x_discrete(
-      breaks=breaks,
-      labels=labels,
-      position="top"
-      )
-b <- fac_row("urban", theme_bottom()) +
-  ylim(0, 1) +
-  labs(y = "Urban Status\n(Proportion)", x = "Age") + 
-  scale_x_discrete(
-      breaks=breaks,
-      labels=labels,
-      position="bottom"
-      ) + 
-  theme(legend.position = "none")
-c <- fac_row("work_any", theme_middle()) +
-  ylim(0, 1) +
-  labs(y = "Employment\n(Proportion)")+ 
-  scale_x_discrete(
-      breaks=breaks,
-      labels=labels,
-      position="top"
-      )
-d <- fac_row("work_hrs", theme_bottom()) + 
-  labs(y = "Employment\n(Hours)", x = "Age")+ 
-  scale_x_discrete(
-      breaks=breaks,
-      labels=labels,
-      position="bottom"
-      )+  theme(legend.position = "none")
-e <- fac_row("notmarried", theme_middle()) + 
-  ylim(0, 1) + 
-  labs(y = "Living Arrangements\nUnmarried\n(Proportion)")+ 
-  scale_x_discrete(
-      breaks=breaks,
-      labels=labels,
-      position="top"
-      )
-f <- fac_row("lives_alone", theme_bottom()) + 
-  ylim(0, 1) + 
-  labs(y = "Living Arrangements\nLives alone\n(Proportion)", x = "Age")+ 
-  scale_x_discrete(
-      breaks=breaks,
-      labels=labels,
-      position="bottom"
-      )+  theme(legend.position = "none")
-g <- fac_row("ill_inj", theme_middle()) + 
-  ylim(0, 1) + 
-  labs(y = "Health\nIllness & Injury\n(Proportion)")+ 
-  scale_x_discrete(
-      breaks=breaks,
-      labels=labels,
-      position="top"
-      )
-h <- fac_row("ill_inj_stopactivity", theme_middle()) +
-  ylim(0, 1) + labs(y = "Health\nStopped\nActivities\n(Proportion)")+
-  scale_x_discrete(
-      breaks=breaks,
-      labels=labels,
-      position="top"
-      )
-i <- fac_row("depressed", theme_middle()) + 
-  ylim(0, 1) +
-  labs(y = "Psychological Health\nDepression\n(Proportion)", x = "Age")+ 
-  scale_x_discrete(
-      breaks=breaks,
-      labels=labels,
-      position="top"
-      )
-j <- fac_row("disability", theme_bottom()) + 
-  ylim(0, 1) + 
-  labs(y = "Functional Limitations\n Disability\n(Proportion)", x = "Age")+
-  scale_x_discrete(
-      breaks=breaks,
-      labels=labels,
-      position="bottom"
-      ) + 
-  theme(legend.position = "none")
-
-plot_grid(
-  plotlist=list(a, b, c, d, e, f, g, h, i, j),
-  ncol=1, 
-  align='v', 
-  rel_heights=c(14, 7, 5, 6.5, 5, 6.5, 5, 5, 5, 7)
-  )
+graph_agg_data_main(weighted=TRUE)
 
 ```
 
+
+```{r outcomes_countries_nonweighted, fig.cap="Employment. Age Group and Gender. Countries. Not Weighted", echo=FALSE, fig.height=60, fig.width=45, dev = c("png", "tiff", "pdf"), dpi=100}
+
+graph_agg_data_main(weighted=FALSE)
+
+```
 
 \end{landscape}
 
@@ -763,32 +849,32 @@ newggslopegraph(
 
 
 
-
-```{r environ, echo=FALSE, fig.height=6.5, fig.width=18, dev = c("png", "tiff", "pdf"), dpi=300}
-
-new_labeller <- c(
-  `govtexpgdp`="Gov. Health \n Expenditure\n(Percentage of GDP)",
-  'oopexp'="100 - Out of Pocket\nHealth Expenditure\n(Percentage)",
-  'pension_coverage_oldage'="Pension Coverage\n(Percentage)",
-  'hospbeds'="N° of Hospital Beds\n(Per 1,000)",
-  'physicians'="N° of Physicians\n(Per 1,000)"
-)
-vars = c(
-  'govtexpgdp', 
-  'oopexp', 
-  'hospbeds', 
-  'physicians', 
-  'pension_coverage_oldage'
-  )
+```{r environ_summ, echo=FALSE, fig.height=6.5, fig.width=18, dev = c("png", "tiff", "pdf"), dpi=300}
 colo = c(
   "#000C66", 
   "#800000", 
   "#FDB813"
   )
 
-ggplot(
-  dat_long, 
-  aes(reorder(country, order), value)
+labeller_environ <- c(  
+  'socexpnohealth'="Social Protection\n Expenditure on Elderly\n(Percentage of GDP)",
+  'uhcidx'="Universal Health\n Care Coverage\n(Index)",
+  'pensioncoverage'="Pension Coverage\n(Percentage)",
+  'lifeexpsixtytotal'="Remaining Life Expectancy\n(At age 60)"
+)
+
+ var_env <- c(
+   'uhcidx',
+   'lifeexpsixtytotal',
+   'socexpnohealth',
+   'pensioncoverage'
+ )
+
+
+dat_long %>% 
+  filter(variable %in% var_env) %>% 
+  ggplot(
+    aes(reorder(country, order), value)
   ) + 
   geom_bar(
     stat = "identity", 
@@ -796,30 +882,88 @@ ggplot(
     color="#1F271B", size=0.5
     ) + 
   facet_grid(
-    ~factor(variable, levels=vars), 
+    ~factor(variable, levels=var_env), 
     scales = "free_x", 
-    labeller= as_labeller(new_labeller)
+    labeller= as_labeller(labeller_environ)
     ) +
   ylab("") +
   xlab("") + 
   coord_flip() + 
   geom_hline(
-    data = sub_sahar_inco, 
+    data = sub_sahar_inco %>% filter(variable %in% var_env), 
     aes(yintercept = value, color="Sub-Saharan African Countries")
     ) +
   geom_hline(
-    data = low_middle_inco, 
+    data = low_middle_inco %>% filter(variable %in% var_env), 
     aes(yintercept = value, color="Low-middle Income Countries")
     )+
   geom_hline(
-    data = high_inco, 
+    data = high_inco %>% filter(variable %in% var_env), 
     aes(yintercept = value, color="High Income Countries")
     ) +
   guides(
     color=guide_legend(title="Regions", reverse=TRUE)
-    )+
+    ) +
   scale_color_manual("Regions", values = colo) +
   theme_minimal() +
   theme_spac() 
 ```
+
+
+
+```{r hea_care, echo=FALSE, fig.height=6.5, fig.width=18, dev = c("png", "tiff", "pdf"), dpi=300}
+
+labeller_health <- c(
+  `govtexpgdp`="Gov. Health \n Expenditure\n(Percentage of GDP)",
+  'oopexp'="100 - Out of Pocket\nHealth Expenditure\n(Percentage)",
+  'hospbeds'="N° of Hospital Beds\n(Per 1,000)",
+  'physicians'="N° of Physicians\n(Per 1,000)"
+)
+var_hea = c(
+  'govtexpgdp', 
+  'oopexp', 
+  'hospbeds', 
+  'physicians'
+  )
+
+dat_long %>% 
+  filter(variable %in% var_hea) %>% 
+  ggplot(
+    aes(reorder(country, order), value)
+  ) + 
+  geom_bar(
+    stat = "identity", 
+    fill = "white",
+    color="#1F271B", size=0.5
+    ) + 
+  facet_grid(
+    ~factor(variable, levels=var_hea), 
+    scales = "free_x", 
+    labeller= as_labeller(labeller_health)
+    ) +
+  ylab("") +
+  xlab("") + 
+  coord_flip() + 
+  geom_hline(
+    data = sub_sahar_inco %>% filter(variable %in% var_hea), 
+    aes(yintercept = value, color="Sub-Saharan African Countries")
+    ) +
+  geom_hline(
+    data = low_middle_inco %>% filter(variable %in% var_hea), 
+    aes(yintercept = value, color="Low-middle Income Countries")
+    )+
+  geom_hline(
+    data = high_inco %>% filter(variable %in% var_hea), 
+    aes(yintercept = value, color="High Income Countries")
+    ) +
+  guides(
+    color=guide_legend(title="Regions", reverse=TRUE)
+    ) +
+  scale_color_manual("Regions", values = colo) +
+  theme_minimal() +
+  theme_spac() 
+```
+
+
+
 
