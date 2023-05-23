@@ -31,10 +31,10 @@ knitr::opts_chunk$set(
 ```{r set_up, include=FALSE}
 # Load & Install Packages
 
-install.packages(
-  "pacman", 
-  repos = "https://github.com/trinker/pacman"
-  )
+##nstall.packages(
+## "pacman", 
+## repos = "https://github.com/trinker/pacman"
+## )
 
 pacman::p_load(
   tidyr, 
@@ -64,7 +64,11 @@ ssa = read_dta(
   )
 
 ssa_agg = read_dta(
-  "../data/preprocessed/allcountries_means5year.dta"
+  "../data/preprocessed/allcountries_means5year_weightspopsurvey.dta"
+  )
+
+ssa_agg_non = read_dta(
+  "../data/preprocessed/allcountries_means5year_noweights.dta"
   )
 
 projections = read_dta(
@@ -116,6 +120,35 @@ ssa_agg = ssa_agg %>%
     )
 ssa_agg$gender <- as.factor(ssa_agg$female)
 
+ssa_agg = melt(ssa_agg,
+    id.vars=c("gender", "age_group5"),
+    measure.vars=c("urban", "work_any", "notmarried", "lives_alone", "ill_inj",  "ill_inj_stopactivity", "depressed", "disability", "healthinsurance_ever"),
+    variable.name="condition",
+    value.name="measurement"
+)
+
+
+ssa_agg_non$gen <- ssa_agg_non$female
+ssa_agg_non$female <- as.factor(ssa_agg_non$female)
+ssa_agg_non$age_group5 <- as.factor(ssa_agg_non$age_group5)
+ssa_agg_non = ssa_agg_non %>% 
+    mutate(
+      female = case_when(
+      female==0
+       ~ 'Male',
+      female ==1
+      ~ 'Female',
+      TRUE ~ NA)
+    )
+ssa_agg_non$gender <- as.factor(ssa_agg_non$female)
+
+ssa_agg_non = melt(ssa_agg_non,
+    id.vars=c("gender", "age_group5"),
+    measure.vars=c("urban", "work_any", "notmarried", "lives_alone", "ill_inj",  "ill_inj_stopactivity", "depressed", "disability", "healthinsurance_ever"),
+    variable.name="condition",
+    value.name="measurement"
+)
+
 ssa$gen <- ssa$female
 ssa$female <- as.factor(ssa$female)
 
@@ -148,23 +181,21 @@ ssa = ssa %>%
       work_hrs = case_when(
         work_hrs>=140 & work_hrs<=168 ~ 140,
         work_hrs>168 ~ NA,
-        TRUE ~ work_hrs),
+        TRUE ~ work_hrs
+        ),
       region = case_when(
         country %in% c('ETHIOPIA', 'TANZANIA', 'UGANDA')
          ~ 'EASTERN \n AFRICA \n',  
         country  %in% c('GHANA', 'NIGERIA')
          ~ 'WESTERN \n AFRICA \n',
         TRUE ~ 'SOUTHERN \n AFRICA \n'
+      ),
+      depressed = case_when(
+        country=='NIGERIA'
+         ~ NA,
+        TRUE ~ depressed
       ))
 ssa$gender <- as.factor(ssa$female)
-
-
-ssa_agg = melt(ssa_agg,
-    id.vars=c("gender", "age_group5"),
-    measure.vars=c("urban", "work_any", "notmarried", "lives_alone", "ill_inj",  "ill_inj_stopactivity", "depressed", "disability", "healthinsurance_ever"),
-    variable.name="condition",
-    value.name="measurement"
-)
 
 
 proj_pop = projections %>% 
@@ -583,7 +614,9 @@ theme_top_spec <- function(
 fac_row_agg <- function(
     forma_theme,
     colors=c("#8eb67d","#000C66"),
-    size_count=12
+    size_count=12,
+    weighted=TRUE
+ 
 ){
   
   condition.labs <- c(
@@ -609,9 +642,19 @@ fac_row_agg <- function(
     "disability",
     "healthinsurance_ever"
     )
-  graph <- ssa_agg %>% 
-    group_by(age_group5, gender) %>% 
-    filter(!age_group5  %in% c('0', '5', '10', '15')) %>% 
+  if (weighted) {
+
+    data <- ssa_agg %>% 
+      group_by(age_group5, gender) %>% 
+      filter(!age_group5  %in% c('0', '5', '10', '15'))
+  } else {
+    data <- ssa_agg_non %>% 
+      group_by(age_group5, gender) %>% 
+      filter(!age_group5  %in% c('0', '5', '10', '15'))   
+  }
+  
+   
+  graph <-data %>%  
     ggplot(
       aes(x = age_group5, y = measurement, colour = gender, group=gender)
       ) + 
@@ -740,7 +783,7 @@ graph_agg_data_main <- function(
 
 \begin{landscape}
 
-```{r outcomes_aggregate, fig.cap="Employment. Age Group and Gender.", echo=FALSE, fig.height=40, fig.width=15, dev = c("png", "tiff"), dpi=200}
+```{r outcomes_aggregate_weighted, fig.cap="Employment. Age Group and Gender.", echo=FALSE, fig.height=40, fig.width=15, dev = c("png", "tiff"), dpi=200}
 breaks=c("20","25","30", "35", "40", "45", "50", "55", "60", "65", "70", "75", "80")
 
 labels=c("20", "", "", "", "40", "", "",  "", "60", "", "", "", "80+")
@@ -754,7 +797,20 @@ fac_row_agg(theme_top_spec())+
       )
 ```
 
-
+```{r outcomes_aggregate_nonweighted, fig.cap="Employment. Age Group and Gender.", echo=FALSE, fig.height=40, fig.width=15, dev = c("png", "tiff"), dpi=200}
+fac_row_agg(
+  theme_top_spec(),
+  weighted = FALSE
+  ) + 
+  ylim(0, 1) + 
+  labs(y = "", x = "Age") + 
+  scale_x_discrete(
+      breaks=breaks,
+      labels=labels,
+      position="bottom"
+  )
+     
+```
 
 ```{r outcomes_countries_weighted, fig.cap="Employment. Age Group and Gender. Countries. Weighted.", echo=FALSE, fig.height=60, fig.width=45, dev = c("png", "tiff", "pdf"), dpi=100}
 
