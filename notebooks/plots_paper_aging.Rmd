@@ -79,6 +79,7 @@ dat = read_dta(
 ```
 
 
+
 ```{r clean_data, include=FALSE}
 
 countries = c(
@@ -141,11 +142,11 @@ var_env <- c(
 measures_labs <- c(
   "Urban Status\n(Proportion)",
   "Employment\n(Proportion)",
-  "Living Arrangements \nUnmarried \n (Proportion)",
-  "Living Arrangements\nLives alone\n(Proportion)", 
+  "Living\nArrangements \nUnmarried \n (Proportion)",
+  "Living\nArrangements\nLives alone\n(Proportion)", 
   "Health\nIllness & Injury\n(Proportion)",
   "Health\nStopped\nActivities\n(Proportion)", 
-  "Physocological Health \n (Depression)", 
+  "Physocological \nHealth \n (Depression)", 
   "Functional \n Limitations \n (Proportion)",
   "Health\nInsurance\n(Proportion)"
 )
@@ -200,7 +201,7 @@ lab_age = c(
   "80+"
   )
 
-trans_input <- function(
+trans_input_gende <- function(
     data,
     var_vec,
     var_nam="condition",
@@ -221,6 +222,29 @@ trans_input <- function(
       )
   data$gender <- as.factor(data$female)
   
+  data = melt(data,
+      id.vars=ids,
+      measure.vars=var_vec,
+      variable.name=var_nam,
+      value.name=val_nam
+  )
+  
+  data <- data %>% 
+    group_by(age_group5, gender) %>% 
+    filter(!age_group5  %in% c('0', '5', '10', '15'))
+}
+  
+  return (data)
+
+
+trans_input_country <- function(
+    data,
+    var_vec,
+    var_nam="condition",
+    val_nam="measurement"
+ 
+){
+  data$age_group5 <- as.factor(data$age_group5)
   data = melt(data,
       id.vars=ids,
       measure.vars=var_vec,
@@ -714,9 +738,9 @@ fac_row <- function(
 
 
 theme_top_spec <- function(
-    size_text=35,
-    size_title=32,
-    size_legend=32,
+    size_text=25,
+    size_title=22,
+    size_legend=22,
     color="#14213D"
 ){
   top = theme(
@@ -748,7 +772,7 @@ fac_row_agg <- function(
     labels,
     forma_theme,
     colors=c("#8eb67d","#000C66"),
-    size_count=12
+    size_count=8
 ){
 
 ##if (weighted) {##
@@ -785,7 +809,7 @@ fac_row_agg <- function(
     geom_rect(
       aes(xmin = "60", xmax = Inf, ymin = -Inf, ymax = Inf),
       alpha = 0.005,
-      fill = "#8eb67d"
+      fill = "#50C878"
         ) +
     forma_theme
 
@@ -900,7 +924,7 @@ graph_agg_data_main <- function(
 
 \begin{landscape}
 
-```{r outcomes_aggregate_nonweighted, fig.cap="Employment. Age Group and Gender.", echo=FALSE, fig.height=10, fig.width=30, dev = c("png", "tiff"), dpi=200}
+```{r outcomes_aggregate_nonweighted, fig.cap="Employment. Age Group and Gender.", echo=FALSE, fig.height=8, fig.width=30, dev = c("png", "tiff"), dpi=200}
 fac_row_agg(
   outcomes_nonweight,
   measures,
@@ -917,7 +941,7 @@ fac_row_agg(
 ```
 
 
-```{r outcomes_aggregate_weighted, fig.cap="Employment. Age Group and Gender.", echo=FALSE, fig.height=40, fig.width=15, dev = c("png", "tiff"), dpi=200}
+```{r outcomes_aggregate_weighted, fig.cap="Employment. Age Group and Gender.", echo=FALSE,  fig.height=8, fig.width=30, dev = c("png", "tiff"), dpi=200}
 fac_row_agg(
   outcomes_weighted,
   measures,
@@ -932,7 +956,7 @@ fac_row_agg(
       )
 ```
 
-```{r disabilities_aggregate_nonweighted, fig.cap="Functional Limitations.", fig.height=40, fig.width=15, dev=c("png", "tiff"), dpi=200, include=FALSE}
+```{r disabilities_aggregate_nonweighted, fig.cap="Functional Limitations.", fig.height=8, fig.width=30, dev = c("png", "tiff"), dpi=200}
 fac_row_agg(
   disabili_nonweight,
   limitations,
@@ -949,7 +973,7 @@ fac_row_agg(
      
 ```
 
-```{r disabilities_aggregate_weighted, fig.cap="Functional Limitations.", fig.height=40, fig.width=15, dev=c("png", "tiff"), dpi=200, include=FALSE}
+```{r disabilities_aggregate_weighted, fig.cap="Functional Limitations.", fig.height=8, fig.width=30, dev = c("png", "tiff"), dpi=200}
 fac_row_agg(
   disabili_weighted,
   limitations,
@@ -985,7 +1009,7 @@ graph_agg_data_main(weighted=FALSE)
 
 \begin{landscape}
 
-```{r disability, fig.cap="Functional Limitations by Age Group and Gender.", echo=FALSE, fig.height=35, fig.width=45, dev = c("png", "tiff"), dpi=400}
+```{r disability_countries_weighted, fig.cap="Functional Limitations by Age Group and Gender. Weighted", echo=FALSE, fig.height=35, fig.width=45, dev = c("png", "tiff"), dpi=400}
 
 b <- fac_row("diff_seei", theme_top()) + 
   ylim(0, 1) + 
@@ -1022,6 +1046,53 @@ f <- fac_row("diff_self_care", theme_middle()) + ylim(0, 1) + labs(y = "With Sel
       )+  theme(legend.position = "none")
 
 i <- fac_row("diff_comm", theme_bottom()) + ylim(0, 1) + labs(y = "Communication", x = "Age")+ scale_x_discrete(
+      breaks=bre_age,
+      labels=lab_age,
+      position="bottom"
+      )
+plot_grid(plotlist=list(b, c, d, e, f, i), ncol=1, align='v', rel_heights = c(9, 5, 5.5, 5, 5, 7.5))
+
+```
+
+
+
+```{r disability_countries_nonweighted, fig.cap="Functional Limitations by Age Group and Gender. Weighted", echo=FALSE, fig.height=35, fig.width=45, dev = c("png", "tiff"), dpi=400}
+
+b <- fac_row("diff_seei", theme_top(), weighted=FALSE) + 
+  ylim(0, 1) + 
+  labs(y = "Seeing", x = "Age") + 
+  scale_x_discrete(
+      breaks=bre_age,
+      labels=lab_age,
+      position="bottom"
+      ) +  
+  theme(legend.position = "none")
+c <- fac_row("diff_hear", theme_middle(),  weighted=FALSE) + 
+  ylim(0, 1) + 
+  labs(y = "Hearing") + 
+  scale_x_discrete(
+      breaks=bre_age,
+      labels=lab_age,
+      position="top"
+      )
+d <- fac_row("diff_reme", theme_bottom(),  weighted=FALSE) +
+  ylim(0, 1) + labs(y = "Remembering", x = "Age")+ scale_x_discrete(
+      breaks=bre_age,
+      labels=lab_age,
+      position="bottom"
+      )+  theme(legend.position = "none")
+e <- fac_row("diff_walk_clim", theme_middle(),weighted=FALSE) + ylim(0, 1) + labs(y = "Walking or \n Climbing")+ scale_x_discrete(
+      breaks=bre_age,
+      labels=lab_age,
+      position="top"
+      )
+f <- fac_row("diff_self_care", theme_middle(), weighted=FALSE ) + ylim(0, 1) + labs(y = "With Self Care", x = "Age")+ scale_x_discrete(
+      breaks=bre_age,
+      labels=lab_age,
+      position="bottom"
+      )+  theme(legend.position = "none")
+
+i <- fac_row("diff_comm", theme_bottom(),  weighted=FALSE) + ylim(0, 1) + labs(y = "Communication", x = "Age")+ scale_x_discrete(
       breaks=bre_age,
       labels=lab_age,
       position="bottom"
