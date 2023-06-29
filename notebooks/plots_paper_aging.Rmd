@@ -130,10 +130,10 @@ measures = c(
   "work_hrs",
   "notmarried", 
   "lives_alone", 
+  "disability", 
   "ill_inj", 
   "ill_inj_stopactivity", 
   "depressed", 
-  "disability", 
   "healthinsurance_ever"
   )
 
@@ -144,10 +144,10 @@ colo = c(
   )
 
 labeller_environ <- c(  
-  'socexpnohealth'="Social Protection\n Expenditure on Elderly\n(Percentage of GDP)",
-  'uhcidx'="Universal Health\n Care Coverage\n(Index)",
-  'pensioncoverage'="Pension Coverage\n(Percentage)",
-  'lifeexpsixtytotal'="Remaining Life Expectancy\n(At age 60)"
+  'socexpnohealth'="C) \n Social Protection\n Expenditure on Elderly\n(Percentage of GDP)",
+  'uhcidx'="A) \n Universal Health\n Care Coverage\n(Index)",
+  'pensioncoverage'="D) \n Pension Coverage\n(Percentage)",
+  'lifeexpsixtytotal'="B) \n Remaining Life Expectancy\n(At age 60)"
 )
 
 var_env <- c(
@@ -158,16 +158,16 @@ var_env <- c(
  )
  
 measures_labs <- c(
-  "Urban Status\n(Proportion)",
-  "Employment\n(Proportion)",
-  "Employment\n(Hours)",
-  "Living\nArrangements \nUnmarried \n (Proportion)",
-  "Living\nArrangements\nLives alone\n(Proportion)", 
-  "Health\nIllness & Injury\n(Proportion)",
-  "Health\nStopped\nActivities\n(Proportion)", 
-  "Psychological \nHealth \n (Depression)", 
-  "Functional \n Limitations \n (Proportion)",
-  "Health\nInsurance\n(Proportion)"
+  "A) Urban Status\n(Proportion)",
+  "B) Employment\n(Proportion)",
+  "C) Employment\n(Hours)",
+  "D) Living\nArrangements \nUnmarried \n (Proportion)",
+  "E) Living\nArrangements\nLives alone\n(Proportion)", 
+  "F) Functional \n Limitations \n (Proportion)",
+  "G) Health\nIllness & Injury\n(Proportion)",
+  "H) Health\nStopped Activities\n(Proportion)", 
+  "I) Psychological Health\nDepression\n(Proportion)", 
+  "J) Health\nInsurance\n(Proportion)"
 )
 
 limitations = c(
@@ -301,6 +301,7 @@ trans_input_count <- function(
 
 outcomes_weighted_country = trans_input_count(subsaharan_weighted, measures)  
 
+outcomes_weighted_country_lim = trans_input_count(subsaharan_weighted, limitations)  
 
 outcomes_weighted_gender = trans_input_gende(ssa_agg, measures)  
 outcomes_nonweight_gender = trans_input_gende(ssa_agg_non, measures)  
@@ -387,10 +388,10 @@ ssa = ssa %>%
         ),
       region = case_when(
         country %in% c('ETHIOPIA', 'TANZANIA', 'UGANDA')
-         ~ 'B) \n EASTERN \n AFRICA \n',  
+         ~ 'EASTERN \n AFRICA \n',  
         country  %in% c('GHANA', 'NIGERIA')
-         ~ 'D) \n WESTERN \n AFRICA \n',
-        TRUE ~ 'C) \n SOUTHERN \n AFRICA \n'
+         ~ 'WESTERN \n AFRICA \n',
+        TRUE ~ 'SOUTHERN \n AFRICA \n'
       ),
       depressed = case_when(
         country=='NIGERIA'
@@ -561,14 +562,15 @@ theme_spac <- function(
 
 theme_top <- function(
     size_text=35,
-    size_title=32,
+    size_title=38,
     size_legend=32,
     color="#14213D"
 ){
   top = theme(
     axis.title.x = element_blank(),
     strip.background=element_rect(fill = "transparent", color = NA),
-    axis.text.x = element_blank(),
+    #axis.text.x = element_blank(),
+    axis.text.x = element_text(color = "#14213D", size = size_text),
     axis.text.y = element_text(color = "#14213D", size = size_text),  
     legend.position="top", 
     legend.justification = "right",
@@ -670,7 +672,7 @@ get_count <- function(
 ){
   ssa0 <- ssa
   ssa0$country = ''
-  ssa0$region = "A) \n SUB-SAHARAN\nAFRICA"
+  ssa0$region = "SUB-SAHARAN\nAFRICA"
   ssa <- rbind(ssa0, ssa)
   annot0 = ssa %>% 
   filter(
@@ -709,7 +711,7 @@ fac_row_popu <- function(
   dat = get_count("gender")
   subsah <- ssa
   subsah$country <- ''
-  subsah$region <- "A) \n SUB-SAHARAN\nAFRICA"
+  subsah$region <- "SUB-SAHARAN\nAFRICA"
   ssa <- rbind(ssa, subsah)
   ssa = ssa %>% filter(!age_group5  %in% c('0', '5', '10', '15'))
 
@@ -719,7 +721,7 @@ fac_row_popu <- function(
       ) + 
     theme_minimal() +
     geom_bar(binwidth = 0.5, color  = "white", position = "dodge") +
-    facet_nested(~factor(region, levels=c("A) \n SUB-SAHARAN\nAFRICA", 'B) \n EASTERN \n AFRICA \n', 'C) \n SOUTHERN \n AFRICA \n', 'D) \n WESTERN \n AFRICA \n')) +country, scales='free_y', space="free_y", nest_line = element_line(linetype = 1)) +
+    facet_nested(~factor(region, levels=c("SUB-SAHARAN\nAFRICA", 'EASTERN \n AFRICA \n', 'SOUTHERN \n AFRICA \n', 'WESTERN \n AFRICA \n')) +country, scales='free_y', space="free_y", nest_line = element_line(linetype = 1)) +
     scale_fill_manual("legend", values = c("Female" = "#8eb67d", "Male" = "#000C66"))+
     geom_text(
       data = dat, 
@@ -729,9 +731,14 @@ fac_row_popu <- function(
       colour="#14213D",
       hjust = -0.2,
       size = size_count
-      ) + 
+      ) +
     forma_theme
   
+    graph = graph+ geom_rect(
+        aes(xmin = "60", xmax = Inf, ymin = -Inf, ymax = Inf),
+        alpha = 0.005,
+        fill = "#8eb67d"
+          ) +
   return (graph)
 }
 
@@ -780,7 +787,7 @@ fac_row <- function(
     ssa_agg = ssa_agg %>% filter(!age_group5  %in% c('0', '5', '10', '15'))
 
     ssa_agg$country = ''
-    ssa_agg$region = "A) \n SUB-SAHARAN\nAFRICA"
+    ssa_agg$region = "SUB-SAHARAN\nAFRICA"
     
     data=bind_rows(data,ssa_agg)
     
@@ -821,7 +828,7 @@ fac_row <- function(
     ssa_agg_non$age_group5 <- as.factor(ssa_agg_non$age_group5)
     
     ssa_agg_non$country = ''
-    ssa_agg_non$region = "A) \n SUB-SAHARAN\nAFRICA"
+    ssa_agg_non$region = "SUB-SAHARAN\nAFRICA"
     ssa_agg_non = ssa_agg_non %>% filter(!age_group5  %in% c('0', '5', '10', '15'))
 
     data=bind_rows(data,ssa_agg_non)
@@ -834,7 +841,7 @@ fac_row <- function(
       ) + 
     theme_minimal() +
     geom_line(size = 3, aes(linetype=gender)) +
-    facet_nested(~factor(region, levels=c("A) \n SUB-SAHARAN\nAFRICA",'B) \n EASTERN \n AFRICA \n', 'C) \n SOUTHERN \n AFRICA \n', 'D) \n WESTERN \n AFRICA \n'))+country, scales='free_y', space="free_y") +
+    facet_nested(~factor(region, levels=c("SUB-SAHARAN\nAFRICA",'EASTERN \n AFRICA \n', 'SOUTHERN \n AFRICA \n', 'WESTERN \n AFRICA \n'))+country, scales='free_y', space="free_y") +
     scale_color_manual(values = colors) +
     
     scale_linetype_manual(values=c("solid", "longdash"))  +
@@ -1035,7 +1042,7 @@ fac_row_agg_count_out <- function(
     mutate(label = ifelse(country== "SUB-SAHARAN\nAFRICA", country, NA)) %>%
     ggplot(
       aes(x = age_group5, y = measurement, colour = I(ifelse(country == "SUB-SAHARAN\nAFRICA", "#050A30", "#D3D3D3")), group=country)
-      ) + 
+      ) +
     facet_wrap(
       . ~condition, 
       ncol = 4, 
@@ -1045,8 +1052,10 @@ fac_row_agg_count_out <- function(
       ) +
     geom_rect(
       aes(xmin = "60", xmax = "80", ymin = -Inf, ymax = Inf),
-      #alpha = 0.01,
-      fill = "#4F94CD"
+      #alpha = 0.009,
+      alpha=0.006,
+      fill="#344771"
+      #fill = "#000C66"
         ) +
     #geom_dl(aes(label = label), method = list(dl.trans(x = x + 0.05), "last.points", cex = 0.8)) +
     theme_minimal() +
@@ -1055,7 +1064,7 @@ fac_row_agg_count_out <- function(
     geom_line(data = filter(data, (country == "SUB-SAHARAN\nAFRICA" & condition!='healthinsurance_ever' & condition!='work_hrs')), size = 2)+#, linetype="dashed")+
   geom_text(x = "40", y = 0.25, aes(label = label), data = f_labels, size=7.5, color="#050A30")+
 
-    scale_fill_manual(values = c("#8c9494")) +
+    scale_fill_manual(values = c("#D3D3D3")) +
 
     #expand_limits(x= c(length(levels(data$age_group5)) + 3))+
     forma_theme
@@ -1076,44 +1085,40 @@ fac_row_agg_count_dis <- function(
   names(condition.labs) <- vars
   levels(data$age_group5) <- c(levels(data$age_group5),'')
   levels(data$age_group5) <- c(levels(data$age_group5),'')
-  f_labels <- data.frame(condition = c("urban", 
-  "work_any", 
-  #"work_hrs",
-  "notmarried", 
-  "lives_alone", 
-  "ill_inj", 
-  "ill_inj_stopactivity", 
-  "depressed", 
-  "disability"), country = c("SUB-SAHARAN\nAFRICA", "", "", "", "", "", "", ""),
-  label = c("SUB-SAHARAN AFRICA", "", "", "", "", "", "", "SUB-SAHARAN AFRICA"))
+  f_labels <- data.frame(condition = c("diff_seei", 
+  "diff_hear",
+  "diff_reme",
+  "diff_walk_clim",
+  "diff_self_care",
+  "diff_comm"), country = c("SUB-SAHARAN\nAFRICA", "", "", "", "", ""),
+  label = c("SUB-SAHARAN AFRICA", "", "", "", "", "SUB-SAHARAN AFRICA"))
   f_labels$condition = factor(f_labels$condition)
 
   graph <-data %>%  
-    filter(condition!='healthinsurance_ever' & condition!='work_hrs' ) %>% 
+    filter(str_detect(condition, 'diff')) %>% 
     mutate(label = ifelse(country== "SUB-SAHARAN\nAFRICA", country, NA)) %>%
     ggplot(
       aes(x = age_group5, y = measurement, colour = I(ifelse(country == "SUB-SAHARAN\nAFRICA", "#050A30", "#D3D3D3")), group=country)
       ) + 
     facet_wrap(
       . ~condition, 
-      ncol = 4, 
+      ncol = 3, 
       labeller = labeller(condition=condition.labs)#,
       #scales='free_y'
 
       ) +
     geom_rect(
       aes(xmin = "60", xmax = "80", ymin = -Inf, ymax = Inf),
-      alpha = 0.1,
-      fill = "#5D92B1"
+      alpha=0.006,
+      fill="#344771"
         ) +
     #geom_dl(aes(label = label), method = list(dl.trans(x = x + 0.05), "last.points", cex = 0.8)) +
     theme_minimal() +
-    #geom_line(size = 1) +
     geom_line(size=1.1) +
-    geom_line(data = filter(data, (country == "SUB-SAHARAN\nAFRICA" & condition!='healthinsurance_ever' & condition!='work_hrs')), size = 2)+#, linetype="dashed")+
-  geom_text(x = "40", y = 0.25, aes(label = label), data = f_labels, size=7.5, color="#050A30")+
+    geom_line(data = filter(data, (country == "SUB-SAHARAN\nAFRICA" & str_detect(condition, 'diff'))), size = 2)+#, linetype="dashed")+
+  geom_text(x = "40", y = 0.15, aes(label = label), data = f_labels, size=7.5, color="#050A30")+
 
-    scale_fill_manual(values = c("#8c9494")) +
+    scale_fill_manual(values = c("#D3D3D3")) +
 
     #expand_limits(x= c(length(levels(data$age_group5)) + 3))+
     forma_theme
@@ -1128,24 +1133,23 @@ graph_agg_data_main <- function(
       labels=lab_age
       ){
   a <- fac_row_popu(theme_top()) + 
-  labs(y = "Observations \n(Count)") +
+  labs(y = "* Observations \n(Count)") +
   scale_x_discrete(
       breaks=breaks,
       labels=labels,
-      position="top"
+      position="bottom"
       )
-  b <- fac_row("urban", theme_bottom(), weighted) +
+  b <- fac_row("urban", theme_middle(), weighted) +
     ylim(0, 1) +
-    labs(y = "Urban Status\n(Proportion)", x = "Age") + 
+    labs(y = "A) Urban Status\n(Proportion)", x = "Age") + 
     scale_x_discrete(
         breaks=breaks,
         labels=labels,
-        position="bottom"
-        ) + 
-    theme(legend.position = "none")
+        position="top"
+        ) 
   c <- fac_row("work_any", theme_middle(), weighted) +
     ylim(0, 1) +
-    labs(y = "Employment\n(Proportion)")+ 
+    labs(y = "B) Employment\n(Proportion)")+ 
     scale_x_discrete(
         breaks=breaks,
         labels=labels,
@@ -1153,7 +1157,7 @@ graph_agg_data_main <- function(
         )
   
   d <- fac_row("work_hrs", theme_bottom(), weighted) + 
-    labs(y = "Employment\n(Hours)", x = "Age")+ 
+    labs(y = "C) Employment\n(Hours)", x = "Age")+ 
     scale_x_discrete(
         breaks=breaks,
         labels=labels,
@@ -1162,52 +1166,51 @@ graph_agg_data_main <- function(
   
   e <- fac_row("notmarried", theme_middle()) + 
     ylim(0, 1) + 
-    labs(y = "Living Arrangements\nUnmarried\n(Proportion)")+ 
+    labs(y = "D) Living Arrangements\nUnmarried\n(Proportion)")+ 
     scale_x_discrete(
         breaks=breaks,
         labels=labels,
         position="top"
         )
   
-  f <- fac_row("lives_alone", theme_bottom(), weighted) + 
+  f <- fac_row("lives_alone", theme_middle(), weighted) + 
     ylim(0, 1) + 
-    labs(y = "Living Arrangements\nLives alone\n(Proportion)", x = "Age")+ 
+    labs(y = "E) Living Arrangements\nLives alone\n(Proportion)", x = "Age")+ 
+    scale_x_discrete(
+        breaks=breaks,
+        labels=labels,
+        position="top"
+        )
+  
+  g <- fac_row("disability", theme_bottom(), weighted) + 
+    ylim(0, 1) + 
+    labs(y = "F) Functional Limitations\n(Proportion)", x = "Age")+
     scale_x_discrete(
         breaks=breaks,
         labels=labels,
         position="bottom"
-        )+  
+        )+
     theme(legend.position = "none")
   
-  g <- fac_row("ill_inj", theme_middle(), weighted) + 
+  h <- fac_row("ill_inj", theme_middle(), weighted) + 
     ylim(0, 1) + 
-    labs(y = "Health\nIllness & Injury\n(Proportion)")+ 
+    labs(y = "G) Health\nIllness & Injury\n(Proportion)")+ 
+    scale_x_discrete(
+        breaks=breaks,
+        labels=labels,
+        position="top"
+        )
+  i <- fac_row("ill_inj_stopactivity", theme_middle(), weighted) +
+    ylim(0, 1) + labs(y = "H) Health\nStopped Activities\n(Proportion)")+
     scale_x_discrete(
         breaks=breaks,
         labels=labels,
         position="top"
         )
   
-  h <- fac_row("ill_inj_stopactivity", theme_middle(), weighted) +
-    ylim(0, 1) + labs(y = "Health\nStopped\nActivities\n(Proportion)")+
-    scale_x_discrete(
-        breaks=breaks,
-        labels=labels,
-        position="top"
-        )
-  
-  i <- fac_row("depressed", theme_middle(), weighted) + 
+  j <- fac_row("depressed", theme_bottom(), weighted) + 
     ylim(0, 1) +
-    labs(y = "Psychological Health\nDepression\n(Proportion)", x = "Age")+ 
-    scale_x_discrete(
-        breaks=breaks,
-        labels=labels,
-        position="top"
-        )
-  
-  j <- fac_row("disability", theme_bottom(), weighted) + 
-    ylim(0, 1) + 
-    labs(y = "Functional Limitations\n(Proportion)", x = "Age")+
+    labs(y = "I) Psychological Health\nDepression\n(Proportion)", x = "Age")+ 
     scale_x_discrete(
         breaks=breaks,
         labels=labels,
@@ -1219,7 +1222,7 @@ graph_agg_data_main <- function(
     plotlist=list(a, b, c, d, e, f, g, h, i, j),
     ncol=1, 
     align='v', 
-    rel_heights=c(14, 7, 5, 6.5, 5, 6.5, 5, 5, 5, 7)
+    rel_heights=c(13, 5, 5, 6.2, 5, 5, 6.2, 5, 5, 6.4)
     )
 }
  
@@ -1282,12 +1285,14 @@ fac_row_agg_count_out(
 ```
 
 
+
+
 ```{r disabilities_aggregate_weighted_countries, fig.cap="Employment. Age Group and Gender.", echo=FALSE,  fig.height=15, fig.width=25, dev = c("png", "tiff"), dpi=200}
 library(directlabels)
 breaks=c("20","25","30", "35", "40", "45", "50", "55", "60", "65", "70", "75", "80", "85", "90", "95")
 labels=c("20", "", "", "", "40", "", "",  "", "60", "", "", "", "80+", "", "", "")
 fac_row_agg_count_dis(
-  outcomes_weighted_country,
+  outcomes_weighted_country_lim,
   limitations,
   limitations_labs,
   theme_top_count())+ 
@@ -1522,10 +1527,10 @@ dat_long %>%
 
 ```{r hea_care, echo=FALSE, fig.height=6.5, fig.width=18, dev = c("png", "tiff", "pdf"), dpi=300}
 labeller_health <- c(
-  `govtexpgdp`="Gov. Health \n Expenditure\n(Percentage of GDP)",
-  'oopexp'="100 - Out of Pocket\nHealth Expenditure\n(Percentage)",
-  'hospbeds'="N° of Hospital Beds\n(Per 1,000)",
-  'physicians'="N° of Physicians\n(Per 1,000)"
+  `govtexpgdp`="A) Gov. Health \n Expenditure\n(Percentage of GDP)",
+  'oopexp'="B) 100 - Out of Pocket\nHealth Expenditure\n(Percentage)",
+  'hospbeds'="C) N° of Hospital Beds\n(Per 1,000)",
+  'physicians'="D) N° of Physicians\n(Per 1,000)"
 )
 var_hea = c(
   'govtexpgdp', 
@@ -1554,7 +1559,7 @@ dat_long %>%
   coord_flip() + 
   geom_hline(
     data = sub_sahar_inco %>% filter(variable %in% var_hea), 
-    aes(yintercept = value, color=" African Countries"),
+    aes(yintercept = value, color="Sub-Saharan African Countries"),
     size=sz
     ) +
   geom_hline(
