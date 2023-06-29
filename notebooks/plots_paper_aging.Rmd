@@ -1427,7 +1427,7 @@ i <- fac_row("diff_comm", theme_bottom()) + ylim(0, 1) + labs(y = "F)\nCommunica
       labels=lab_age,
       position="bottom"
       )
-plot_grid(plotlist=list(b, c, d, e, f, i), ncol=1, align='v', rel_heights = c(9.5, 5, 5.5, 5, 5, 7.5))
+plot_grid(plotlist=list(b, c, d, e, f, i), ncol=1, align='v', rel_heights = c(9.2, 5, 5.8, 5, 5, 7.8))
 
 ```
 
@@ -1474,7 +1474,7 @@ i <- fac_row("diff_comm", theme_bottom(),  weighted=FALSE) + ylim(0, 1) + labs(y
       labels=lab_age,
       position="bottom"
       )
-plot_grid(plotlist=list(b, c, d, e, f, i), ncol=1, align='v', rel_heights = c(9.5, 5, 5.5, 5, 5, 7.5))
+plot_grid(plotlist=list(b, c, d, e, f, i), ncol=1, align='v', rel_heights = c(9.2, 5, 5.8, 5, 5, 7.8))
 
 ```
 
