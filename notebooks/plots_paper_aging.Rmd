@@ -29,14 +29,8 @@ knitr::opts_chunk$set(
 
 ```{r set_up, include=FALSE}
 # Load & Install Packages
-
-##nstall.packages(
-## "pacman", 
-## repos = "https://github.com/trinker/pacman"
-## )
-library(ggtext)
-
 pacman::p_load(
+  ggtext,
   tidyr, 
   haven, 
   plyr, 
@@ -143,11 +137,11 @@ colo = c(
   "#FDB813"
   )
 
-labeller_environ <- c(  
-  'socexpnohealth'="C) \n Social Protection\n Expenditure on Elderly\n(Percentage of GDP)",
+labeller_environ <- c( 
   'uhcidx'="A) \n Universal Health\n Care Coverage\n(Index)",
-  'pensioncoverage'="D) \n Pension Coverage\n(Percentage)",
-  'lifeexpsixtytotal'="B) \n Remaining Life Expectancy\n(At age 60)"
+  'lifeexpsixtytotal'="B) \n Remaining Life Expectancy\n(At age 60)",
+  'socexpnohealth'="C) \n Social Protection\n Expenditure on Elderly\n(Percentage of GDP)",
+  'pensioncoverage'="D) \n Pension Coverage\n(Percentage)"
 )
 
 var_env <- c(
@@ -180,12 +174,12 @@ limitations = c(
 )
 
 limitations_labs <- c(
-  "Seeing",
-  "Hearing",
-  "Remembering",
-  "Walking or \n Climbing",
-  "With Self Care",
-  "Communication"
+  "A)\nSeeing",
+  "B)\nHearing",
+  "C)\nRemembering",
+  "D)\nWalking or \n Climbing",
+  "E)\nWith Self Care",
+  "F)\nCommunication"
 )
 
 bre_age = c(
@@ -265,6 +259,7 @@ trans_input_count <- function(
  
 ){
   data$age_group5 <- as.factor(data$age_group5)
+  data$work_hrs = data$work_hrs/40
   data = melt(data,
       id.vars=ids,
       measure.vars=var_vec,
@@ -531,6 +526,7 @@ sub_sahar_inco = gather(
 ```
 
 
+
 ```{r functions, echo=FALSE}
 
 theme_spac <- function(
@@ -559,6 +555,37 @@ theme_spac <- function(
 }
 
 
+theme_top_a <- function(
+    size_text=35,
+    size_title=38,
+    size_legend=32,
+    color="#14213D"
+){
+  top = theme(
+    axis.title.x = element_blank(),
+    strip.background=element_rect(fill = "transparent", color = NA),
+    axis.text.x = element_blank(),
+    #axis.text.x = element_text(color = "#14213D", size = size_text),
+    axis.text.y = element_text(color = "#14213D", size = size_text),  
+    legend.position="top", 
+    legend.justification = "right",
+    axis.ticks.x = element_blank(),
+    legend.title=element_blank(),
+    legend.text = element_text(
+      margin = margin(t = size_legend, b = size_legend, unit = "pt"),
+      size=size_legend
+      ),
+    legend.key.size = unit(6,"line"), 
+
+    text = element_text(size = size_text), 
+    strip.text = element_text(color = color, size=size_title, face="bold"),
+    axis.title.y = element_text(angle = 0),
+    panel.spacing = unit(3, "lines")
+
+    )
+
+  return (top)
+}
 
 theme_top <- function(
     size_text=35,
@@ -1027,25 +1054,25 @@ fac_row_agg_count_out <- function(
   levels(data$age_group5) <- c(levels(data$age_group5),'')
   f_labels <- data.frame(condition = c("urban", 
   "work_any", 
-  #"work_hrs",
+  "work_hrs",
   "notmarried", 
   "lives_alone", 
   "ill_inj", 
   "ill_inj_stopactivity", 
   "depressed", 
-  "disability"), country = c("SUB-SAHARAN\nAFRICA", "", "", "", "", "", "", ""),
-  label = c("SUB-SAHARAN AFRICA", "", "", "", "", "", "", "SUB-SAHARAN AFRICA"))
+  "disability"), country = c("SUB-SAHARAN\nAFRICA", "", "", "", "", "", "", "", ""),
+  label = c("SUB-SAHARAN AFRICA", "", "", "", "", "", "", "","SUB-SAHARAN AFRICA"))
   f_labels$condition = factor(f_labels$condition)
 
   graph <-data %>%  
-    filter(condition!='healthinsurance_ever' & condition!='work_hrs' ) %>% 
+    filter(condition!='healthinsurance_ever') %>% 
     mutate(label = ifelse(country== "SUB-SAHARAN\nAFRICA", country, NA)) %>%
     ggplot(
       aes(x = age_group5, y = measurement, colour = I(ifelse(country == "SUB-SAHARAN\nAFRICA", "#050A30", "#D3D3D3")), group=country)
       ) +
     facet_wrap(
       . ~condition, 
-      ncol = 4, 
+      ncol = 3, 
       labeller = labeller(condition=condition.labs)#,
       #scales='free_y'
 
@@ -1061,7 +1088,7 @@ fac_row_agg_count_out <- function(
     theme_minimal() +
     #geom_line(size = 1) +
     geom_line(size=1.1) +
-    geom_line(data = filter(data, (country == "SUB-SAHARAN\nAFRICA" & condition!='healthinsurance_ever' & condition!='work_hrs')), size = 2)+#, linetype="dashed")+
+    geom_line(data = filter(data, (country == "SUB-SAHARAN\nAFRICA" & condition!='healthinsurance_ever')), size = 2)+#, linetype="dashed")+
   geom_text(x = "40", y = 0.25, aes(label = label), data = f_labels, size=7.5, color="#050A30")+
 
     scale_fill_manual(values = c("#D3D3D3")) +
@@ -1361,46 +1388,46 @@ graph_agg_data_main(weighted=FALSE)
 
 ```{r disability_countries_weighted, fig.cap="Functional Limitations by Age Group and Gender. Weighted", echo=FALSE, fig.height=35, fig.width=45, dev = c("png", "tiff"), dpi=400}
 
-b <- fac_row("diff_seei", theme_top()) + 
+b <- fac_row("diff_seei", theme_top_a()) + 
   ylim(0, 1) + 
-  labs(y = "Seeing", x = "Age") + 
+  labs(y = "A)\nSeeing", x = "Age") + 
   scale_x_discrete(
       breaks=bre_age,
       labels=lab_age,
       position="bottom"
-      ) +  
-  theme(legend.position = "none")
+      )   + theme(legend.position = "none")
+
 c <- fac_row("diff_hear", theme_middle()) + 
   ylim(0, 1) + 
-  labs(y = "Hearing") + 
+  labs(y = "B)\nHearing") + 
   scale_x_discrete(
       breaks=bre_age,
       labels=lab_age,
       position="top"
       )
 d <- fac_row("diff_reme", theme_bottom()) +
-  ylim(0, 1) + labs(y = "Remembering", x = "Age")+ scale_x_discrete(
+  ylim(0, 1) + labs(y = "C)\nRemembering", x = "Age")+ scale_x_discrete(
       breaks=bre_age,
       labels=lab_age,
       position="bottom"
       )+  theme(legend.position = "none")
-e <- fac_row("diff_walk_clim", theme_middle()) + ylim(0, 1) + labs(y = "Walking or \n Climbing")+ scale_x_discrete(
+e <- fac_row("diff_walk_clim", theme_middle()) + ylim(0, 1) + labs(y = "D)\nWalking or \n Climbing")+ scale_x_discrete(
       breaks=bre_age,
       labels=lab_age,
       position="top"
       )
-f <- fac_row("diff_self_care", theme_middle()) + ylim(0, 1) + labs(y = "With Self Care", x = "Age")+ scale_x_discrete(
+f <- fac_row("diff_self_care", theme_middle()) + ylim(0, 1) + labs(y = "E)\nWith Self Care", x = "Age")+ scale_x_discrete(
       breaks=bre_age,
       labels=lab_age,
       position="bottom"
       )+  theme(legend.position = "none")
 
-i <- fac_row("diff_comm", theme_bottom()) + ylim(0, 1) + labs(y = "Communication", x = "Age")+ scale_x_discrete(
+i <- fac_row("diff_comm", theme_bottom()) + ylim(0, 1) + labs(y = "F)\nCommunication", x = "Age")+ scale_x_discrete(
       breaks=bre_age,
       labels=lab_age,
       position="bottom"
       )
-plot_grid(plotlist=list(b, c, d, e, f, i), ncol=1, align='v', rel_heights = c(9, 5, 5.5, 5, 5, 7.5))
+plot_grid(plotlist=list(b, c, d, e, f, i), ncol=1, align='v', rel_heights = c(9.5, 5, 5.5, 5, 5, 7.5))
 
 ```
 
@@ -1408,9 +1435,9 @@ plot_grid(plotlist=list(b, c, d, e, f, i), ncol=1, align='v', rel_heights = c(9,
 
 ```{r disability_countries_nonweighted, fig.cap="Functional Limitations by Age Group and Gender. Weighted", echo=FALSE, fig.height=35, fig.width=45, dev = c("png", "tiff"), dpi=400}
 
-b <- fac_row("diff_seei", theme_top(), weighted=FALSE) + 
+b <- fac_row("diff_seei", theme_top_a(), weighted=FALSE) + 
   ylim(0, 1) + 
-  labs(y = "Seeing", x = "Age") + 
+  labs(y = "A)\nSeeing", x = "Age") + 
   scale_x_discrete(
       breaks=bre_age,
       labels=lab_age,
@@ -1419,35 +1446,35 @@ b <- fac_row("diff_seei", theme_top(), weighted=FALSE) +
   theme(legend.position = "none")
 c <- fac_row("diff_hear", theme_middle(),  weighted=FALSE) + 
   ylim(0, 1) + 
-  labs(y = "Hearing") + 
+  labs(y = "B)\nHearing") + 
   scale_x_discrete(
       breaks=bre_age,
       labels=lab_age,
       position="top"
       )
 d <- fac_row("diff_reme", theme_bottom(),  weighted=FALSE) +
-  ylim(0, 1) + labs(y = "Remembering", x = "Age")+ scale_x_discrete(
+  ylim(0, 1) + labs(y = "C)\nRemembering", x = "Age")+ scale_x_discrete(
       breaks=bre_age,
       labels=lab_age,
       position="bottom"
       )+  theme(legend.position = "none")
-e <- fac_row("diff_walk_clim", theme_middle(),weighted=FALSE) + ylim(0, 1) + labs(y = "Walking or \n Climbing")+ scale_x_discrete(
+e <- fac_row("diff_walk_clim", theme_middle(),weighted=FALSE) + ylim(0, 1) + labs(y = "D)\nWalking or \n Climbing")+ scale_x_discrete(
       breaks=bre_age,
       labels=lab_age,
       position="top"
       )
-f <- fac_row("diff_self_care", theme_middle(), weighted=FALSE ) + ylim(0, 1) + labs(y = "With Self Care", x = "Age")+ scale_x_discrete(
+f <- fac_row("diff_self_care", theme_middle(), weighted=FALSE ) + ylim(0, 1) + labs(y = "E)\nWith Self Care", x = "Age")+ scale_x_discrete(
       breaks=bre_age,
       labels=lab_age,
       position="bottom"
       )+  theme(legend.position = "none")
 
-i <- fac_row("diff_comm", theme_bottom(),  weighted=FALSE) + ylim(0, 1) + labs(y = "Communication", x = "Age")+ scale_x_discrete(
+i <- fac_row("diff_comm", theme_bottom(),  weighted=FALSE) + ylim(0, 1) + labs(y = "F)\nCommunication", x = "Age")+ scale_x_discrete(
       breaks=bre_age,
       labels=lab_age,
       position="bottom"
       )
-plot_grid(plotlist=list(b, c, d, e, f, i), ncol=1, align='v', rel_heights = c(9, 5, 5.5, 5, 5, 7.5))
+plot_grid(plotlist=list(b, c, d, e, f, i), ncol=1, align='v', rel_heights = c(9.5, 5, 5.5, 5, 5, 7.5))
 
 ```
 
