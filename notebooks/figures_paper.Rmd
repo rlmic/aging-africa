@@ -27,6 +27,7 @@ knitr::opts_chunk$set(
 	)
 ```
 
+
 ```{r packages, include=FALSE}
 # Load & Install Packages
 pacman::p_load(
@@ -80,20 +81,22 @@ countries_weighted = read_dta(
 )
 
 subsaharan_weighted$country <-'ssa'
+
 subsaharan_weighted = rbind(subsaharan_weighted, countries_weighted)
 ```
+
 
 
 ```{r labels, include=FALSE}
 
 countries = c(
   "South Africa",
-  "Malawi", 
-  "Tanzania",
+  "Nigeria", 
   "Ghana", 
-  "Ethiopia", 
+  "Tanzania", 
+  "Ethiopia",
   "Uganda",
-  "Nigeria"
+  "Malawi"
   )
 
 regions = c(
@@ -103,7 +106,7 @@ regions = c(
   '**3.-** Western Africa <br>'
   )
 
-counn= rep(countries, 4)
+counn = rep(countries, 4)
 
 var_sum = c(
   "govtexpgdp", 
@@ -1309,7 +1312,7 @@ main_outco <- function(
   theme_minimal() +
 
   theme_spac() +
-  geom_text(label = counn, hjust = ifelse(counn== 'South Africa', 1, -0.05), color="#344771", size=5)
+  geom_text(label = rep(c("South Africa", "Malawi", "Tanzania", "Ghana", "Ethiopia", "Uganda", "Nigeria"),4), hjust = ifelse(counn== 'South Africa', 1, -0.05), color="#344771", size=5)
   return (graph)
   
 }
@@ -1458,8 +1461,26 @@ dat_long = gather(
   )
 
 dat_long = dat_long %>%                         
-  mutate(order = row_number())
+  mutate(order=
+    case_when(
+        country == 'South Africa'
+         ~ 1,
+        country == 'Nigeria'
+         ~ 2,  
+        country == 'Ghana'
+         ~ 3,  
+        country == 'Tanzania'
+         ~ 4,  
+        country == 'Ethiopia'
+         ~ 5,  
+        country == 'Uganda'
+         ~ 6,
+        country == 'Malawi'
+         ~ 7))
 
+dat_long[
+  with(dat_long, order(variable, order)),
+]
 
 dat_0 = dat %>% filter(cou!=1)
 
@@ -1514,6 +1535,8 @@ sub_sahar_inco = gather(
   factor_key=TRUE
 )
 ```
+
+
 
 
 ```{r environ, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=300}
