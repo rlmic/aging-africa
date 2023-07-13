@@ -91,8 +91,8 @@ subsaharan_weighted = rbind(subsaharan_weighted, countries_weighted)
 
 countries = c(
   "South Africa",
-  "Nigeria", 
   "Ghana", 
+  "Nigeria", 
   "Tanzania", 
   "Ethiopia",
   "Uganda",
@@ -1465,9 +1465,9 @@ dat_long = dat_long %>%
     case_when(
         country == 'South Africa'
          ~ 1,
-        country == 'Nigeria'
-         ~ 2,  
         country == 'Ghana'
+         ~ 2,  
+        country == 'Nigeria'
          ~ 3,  
         country == 'Tanzania'
          ~ 4,  
