@@ -430,7 +430,7 @@ depratov65 <- ggplot(
     clip = "off",
   ) +    
   theme_minimal() +
-  labs(x="", y="", title='**E.-** General Population (Dependency Ratio)')+
+  labs(x="", y="", title='**A.-** General Population (Dependency Ratio)')+
    theme(
      panel.grid.minor  = element_blank(),
      panel.grid.major  = element_line(linetype = 'dotted'),
@@ -474,7 +474,7 @@ oldageratov65 = ggplot(old_age_rat_ov65, aes(year, ratio, group=countryregion)) 
     box.padding = .4,
     segment.curvature = -0.1
     ) +
-  labs(x="", y="", title='**F.-** Over 60 Population (Dependency Ratio)')+
+  labs(x="", y="", title='**B.-** Over 60 Population (Dependency Ratio)')+
     theme_minimal() +
 
   theme(
