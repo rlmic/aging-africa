@@ -474,7 +474,7 @@ oldageratov65 = ggplot(old_age_rat_ov65, aes(year, ratio, group=countryregion)) 
     box.padding = .4,
     segment.curvature = -0.1
     ) +
-  labs(x="", y="", title='**B.-** Over 60 Population (Dependency Ratio)')+
+  labs(x="", y="", title='**B.-** Over 65 Population (Dependency Ratio)')+
     theme_minimal() +
 
   theme(
@@ -980,7 +980,7 @@ totpop$lab =c(
 ```
 
 ```{r}
-PRUEBATOT = ggplot(
+fig1c = ggplot(
   totpop %>%  filter(countryregion!='Rest of World'), 
   aes(condition, measurement, fill=countryregion, label=countryregion, fill=countryregion)
   ) +
@@ -1094,7 +1094,7 @@ last=254160.73
 
 ```{r}
 
-PRUEBA= ggplot(
+fig1d = ggplot(
   over60 %>%  filter(countryregion!='Rest of World'), 
   aes(condition, measurement, fill=countryregion, label=countryregion, fill=countryregion)
   ) +
@@ -1666,11 +1666,11 @@ fac_row_popu <- function(
       ) +
     forma_theme
   
-    graph = graph + geom_rect(
-        aes(xmin = "60", xmax = Inf, ymin = -Inf, ymax = Inf),
-        alpha = 0.005,
-        fill = "#8eb67d"
-          )
+    #graph = graph + geom_rect(
+    #    aes(xmin = "60", xmax = Inf, ymin = -Inf, ymax = Inf),
+    #    alpha = 0.01,
+    #    fill = "#8eb67d"
+    #      )
   return (graph)
 }
 
@@ -2311,14 +2311,14 @@ ssa = ssa %>%
         TRUE ~ depressed
       ))
 ssa$gender <- as.factor(ssa$female)
+```
 
+```{r}
+projections['1990'] =projections$pop_60plus_1990
+projections['2020'] =projections$pop_60plus_2020
+projections['2050'] =projections$pop_60plus_2050
 
-proj_pop = projections %>% 
-  rename(
-  '1990'= pop_60plus_1990, 
-  '2020'= pop_60plus_2020, 
-  '2050'= pop_60plus_2050
-  ) %>% select(
+proj_pop = projections %>% select(
   country, 
   '1990',
   '2020', 
@@ -2347,8 +2347,14 @@ proj_pop = proj_pop %>%
     )
 
 proj_pop = proj_pop %>% mutate(
-  value=value/1000
+  value=value
 ) %>%  mutate(across(c('value'), round, 1))
+
+```
+
+
+
+```{r}
 
 dat = dat %>% select(
   'country', 
@@ -2464,18 +2470,17 @@ sub_sahar_inco = gather(
 ```
 
 
-
-```{r ov60_pop, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=300}
+```{r ov60_pop, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
 # Figure 1 (A & B)
 fig1a | fig1b  
 ```
 
-```{r ov60_growth, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=300}
+```{r ov60_growth, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
 # Figure 1 (C & D)
-PRUEBATOT| PRUEBA
+fig1c| fig1d
 ```
 
-```{r ov60_dep_rat, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=300}
+```{r ov60_dep_rat, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
 # Figure 1 (E & F)
 wrap_elements(panel = depratov60  + oldageratov60 ) +
   labs(tag = "**Year**") +
@@ -2486,8 +2491,7 @@ wrap_elements(panel = depratov60  + oldageratov60 ) +
 ```
 
 
-
-```{r environ, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=300}
+```{r environ, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
 # Figure 2: Key Indicators across Sub-Saharan African Countries
 main_outco(
   vars=var_env,
@@ -2496,7 +2500,7 @@ main_outco(
 ```
 
 
-```{r pop_grow, echo=FALSE, fig.height=6, fig.width=5, dev = c("png"), dpi=300}
+```{r pop_grow, echo=FALSE, fig.height=6, fig.width=5, dev = c("png"), dpi=100}
 # Figure 3: Over-60 Population Growth
 newggslopegraph(
   dataframe = proj_pop,
@@ -2520,7 +2524,7 @@ newggslopegraph(
 
 
 \begin{landscape}
-```{r outcomes_aggregate_weighted, fig.cap="Employment. Age Group and Gender.", echo=FALSE,  fig.height=25, fig.width=25, dev = c("png"), dpi=200}
+```{r outcomes_aggregate_weighted, fig.cap="Employment. Age Group and Gender.", echo=FALSE,  fig.height=25, fig.width=25, dev = c("png"), dpi=100}
 # Figure 4: Employment, Health, and Living Arrangements over the Life Course: Aggregate
 fac_row_agg_count_out(
   outcomes_weighted_country,
@@ -2546,7 +2550,7 @@ graph_agg_data_main(weighted=TRUE)
 ```
 
 
-```{r disabilities_aggregate_weighted, echo=FALSE,  fig.height=12, fig.width=19, dev = c("png"), dpi=200}
+```{r disabilities_aggregate_weighted, echo=FALSE,  fig.height=12, fig.width=19, dev = c("png"), dpi=100}
 # Figure 6: Functional Limitations over the Life Course
 fac_row_agg_count_dis(
   outcomes_weighted_country_lim,
@@ -2570,7 +2574,7 @@ fac_row_agg_count_dis(
 ```
 
 
-```{r disabilities_gender_weighted, fig.cap="Functional Limitations by Age Group and Gender. Weighted", echo=FALSE, fig.height=35, fig.width=45, dev = c("png"), dpi=400}
+```{r disabilities_gender_weighted, fig.cap="Functional Limitations by Age Group and Gender. Weighted", echo=FALSE, fig.height=35, fig.width=45, dev = c("png"), dpi=100}
 # Figure 7: Health and Health Care
 
 b <- fac_row__("diff_seei", theme_top_a()) + 
@@ -2618,7 +2622,7 @@ plot_grid(b, c, d, e, f, i, ncol=1, align='v', rel_heights = c(7.7, 5, 5.8, 5, 5
 
 \end{landscape}
 
-```{r hea_care, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=300}
+```{r hea_care, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
 # Figure 8: Health and Health Care
 main_outco(
   vars=var_hea,
@@ -2631,7 +2635,7 @@ main_outco(
 \begin{landscape}
 
 
-```{r ov65_dep_rat, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=300}
+```{r ov65_dep_rat, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
 
 # Appendix: Figure 1
 wrap_elements(panel = depratov65  + oldageratov65) +
@@ -2643,7 +2647,7 @@ wrap_elements(panel = depratov65  + oldageratov65) +
 ```
 
 
-```{r outcomes_aggregate_nonweighted, fig.cap="Employment. Age Group and Gender.", echo=FALSE,  fig.height=25, fig.width=25, dev = c("png"), dpi=200}
+```{r outcomes_aggregate_nonweighted, fig.cap="Employment. Age Group and Gender.", echo=FALSE,  fig.height=25, fig.width=25, dev = c("png"), dpi=100}
 # Appendix: Figure 3 - Employment, Health, and Living Arrangements over the Life Course: Aggregate
 fac_row_agg_count_out(
   outcomes_nonweighted_country,
@@ -2670,7 +2674,7 @@ graph_agg_data_main(weighted=FALSE)
 
 
 
-```{r disabilities_aggregate_nonweighted, echo=FALSE,  fig.height=12, fig.width=19, dev = c("png"), dpi=200}
+```{r disabilities_aggregate_nonweighted, echo=FALSE,  fig.height=12, fig.width=19, dev = c("png"), dpi=100}
 # Appendix: Figure 5 - Functional Limitations over the Life Course: Aggregate, no weights
 fac_row_agg_count_dis(
   outcomes_nonweighted_country_lim,
@@ -2693,7 +2697,7 @@ fac_row_agg_count_dis(
 ```
 
 
-```{r disabilities_gender_nonweighted, fig.cap="Functional Limitations by Age Group and Gender. Weighted", echo=FALSE, fig.height=35, fig.width=45, dev = c("png"), dpi=400}
+```{r disabilities_gender_nonweighted, fig.cap="Functional Limitations by Age Group and Gender. Weighted", echo=FALSE, fig.height=35, fig.width=45, dev = c("png"), dpi=100}
 # Appendix: Figure 6 - Functional Limitations over the Life Course: Country-level, no weights
 b <- fac_row__("diff_seei", theme_top_a(), weighted=FALSE) + 
   ylim(0, 1) + 
