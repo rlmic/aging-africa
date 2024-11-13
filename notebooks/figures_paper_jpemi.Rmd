@@ -2485,6 +2485,49 @@ wrap_elements(panel = depratov60  + oldageratov60 ) +
 ```
 
 
+```{r outcomes_aggregate_weighted, fig.cap="Employment. Age Group and Gender.", echo=FALSE,  fig.height=25, fig.width=25, dev = c("png"), dpi=100}
+# Figure 3: Employment, Health, & Living Arrangements over the Life Course: Aggregate
+
+fac_row_agg_count_out(
+  outcomes_weighted_country,
+  measures,
+  measures_labs_agg,
+  theme_top_count())+ 
+  labs(y = "Proportion", x = "Age") + 
+  scale_x_discrete(
+      breaks=bre_age,
+      labels=lab_age,
+      position="bottom"
+      )+
+  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '–', '1'))
+
+```
+
+
+
+```{r disabilities_aggregate_weighted, echo=FALSE,  fig.height=12, fig.width=19, dev = c("png"), dpi=100}
+# Figure 5: Functional Limitations over the Life Course
+fac_row_agg_count_dis(
+  outcomes_weighted_country_lim,
+  limitations,
+  limitations_labs,
+  theme_top_count(
+    size_text=23,
+    size_title=28,
+    size_legend=18,
+    color="#344771"
+  ))+ 
+  labs(y = "Proportion", x = "Age") + 
+  scale_x_discrete(
+      breaks=bre_age,
+      labels=lab_age,
+      position="bottom"
+      )+ 
+  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '–', '1'), limits = c(0, 1))
+
+```
+
+
 ```{r hea_care, echo=FALSE, fig.height=7.5, fig.width=15, dev = c("png"), dpi=100}
 # Figure 7: Social Protection across Selected Sub-Saharan African Countries
 main_outco(
@@ -2506,53 +2549,12 @@ main_outco(
 
 
 \begin{landscape}
-```{r outcomes_aggregate_weighted, fig.cap="Employment. Age Group and Gender.", echo=FALSE,  fig.height=25, fig.width=25, dev = c("png"), dpi=100}
-# Figure 3: Employment, Health, & Living Arrangements over the Life Course: Aggregate
-
-fac_row_agg_count_out(
-  outcomes_weighted_country,
-  measures,
-  measures_labs_agg,
-  theme_top_count())+ 
-  labs(y = "Proportion", x = "Age") + 
-  scale_x_discrete(
-      breaks=bre_age,
-      labels=lab_age,
-      position="bottom"
-      )+
-  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '–', '1'))
-
-```
 
 
 
 ```{r outcomes_gender_weighted, fig.cap="Employment. Age Group and Gender. Countries. Weighted.", echo=FALSE, fig.height=70, fig.width=45, dev = c("png"), dpi=100}
 # Figure 5: Employment, Health, and Living Arrangements over the Life Course: Country Level
 graph_agg_data_main(weighted=TRUE)
-
-```
-
-
-```{r disabilities_aggregate_weighted, echo=FALSE,  fig.height=12, fig.width=19, dev = c("png"), dpi=100}
-# Figure 6: Functional Limitations over the Life Course
-fac_row_agg_count_dis(
-  outcomes_weighted_country_lim,
-  limitations,
-  limitations_labs,
-  theme_top_count(
-    size_text=23,
-    size_title=28,
-    size_legend=18,
-    color="#344771"
-  ))+ 
-  labs(y = "Proportion", x = "Age") + 
-  scale_x_discrete(
-      breaks=bre_age,
-      labels=lab_age,
-      position="bottom"
-      )+ 
-  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '-', '1'), limits = c(0, 1))
-
 
 ```
 
