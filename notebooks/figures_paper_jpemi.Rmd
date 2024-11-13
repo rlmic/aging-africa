@@ -1199,14 +1199,13 @@ colo = c(
   )
 
 labeller_environ <- c( 
-  'uhcidx'="**A.-** Health Care<br> Service Coverage<br>(Index)<br>",
-  'lifeexpsixtytotal'="**B.-** Remaining Life<br>Expectancy At age 60<br>(Years)<br>",
-  'socexpnohealth'="**C.-** Social Protection<br> Expenditure on Elderly<br>(Percentage of GDP)<br>",
-  'pensioncoverage'="**D.-** Pension<br>Coverage<br>(Percentage)<br>"
+  'lifeexpsixtytotal'="**A.-** Remaining Life<br>Expectancy At age 60<br>(Years)<br>",
+  'socexpnohealth'="**B.-** Social Protection<br> Expenditure on Elderly<br>(Percentage of GDP)<br>",
+  'pensioncoverage'="**C.-** Pension<br>Coverage<br>(Percentage)<br>"
 )
 
+
 var_env <- c(
-   'uhcidx',
    'lifeexpsixtytotal',
    'socexpnohealth',
    'pensioncoverage'
@@ -1301,13 +1300,15 @@ lab_age = c(
   )
 
 labeller_health <- c(
-  'oopexp'="**A.-** 100 - Out of Pocket<br>Health Expenditure<br>(Percentage)<br>",
-  `govtexpgdp`="**B.-** Gov. Health<br>Expenditure<br>(Percentage of GDP)<br>",
-  'hospbeds'="**C.-** N° of Hospital Beds<br>Per 1,000<br>(Count)<br>",
-  'physicians'="**D.-** N° of Physicians<br>Per 1,000<br>(Count)<br>"
+  'uhcidx'="**A.-** Health Care<br> Service Coverage<br>(Index)<br>",
+  'oopexp'="**B.-** 100 - Out of Pocket<br>Health Expenditure<br>(Percentage)<br>",
+  `govtexpgdp`="**C.-** Gov. Health<br>Expenditure<br>(Percentage of GDP)<br>",
+  'hospbeds'="**D.-** N° of Hospital Beds<br>Per 1,000<br>(Count)<br>",
+  'physicians'="**E.-** N° of Physicians<br>Per 1,000<br>(Count)<br>"
 )
 
 var_hea = c(
+  'uhcidx',
   'oopexp', 
   'govtexpgdp', 
   'hospbeds', 
@@ -2142,70 +2143,53 @@ graph_agg_data_main <- function(
 
 ```{r}
 main_outco <- function(
-    vars,
-    labs,
-    dat=dat_long,
-    high=high_inco,
-    sub=sub_sahar_inco,
-    low=low_middle_inco,
-    size_line=1.1
-    ){
+  vars,
+  labs,
+  dat = dat_long,
+  high = high_inco,
+  sub = sub_sahar_inco,
+  low = low_middle_inco,
+  size_line = 1.1
+) {
   graph = dat %>% 
-  filter(variable %in% vars) %>% 
-  ggplot(
-    aes(reorder(country, order), value)
-  ) + 
-  geom_bar(
-    stat = "identity", 
-    fill = "white",
-    color="#1F271B", 
-    width = 0.85,
-    size=0.5
-    ) + 
-  facet_grid(
-    ~factor(variable, levels=vars), 
-    scales = "free_x", 
-    labeller= as_labeller(labs)
+    filter(variable %in% vars) %>% 
+    ggplot(aes(reorder(country, order), value)) + 
+    geom_bar(stat = "identity", fill = "white", color = "#1F271B", width = 0.85, size = 0.5) + 
+    facet_grid(~factor(variable, levels = vars), scales = "free_x", labeller = as_labeller(labs)) +
+    ylab("") + 
+    xlab("") + 
+    coord_flip() + 
+    geom_hline(
+      data = sub %>% filter(variable %in% vars), 
+      aes(yintercept = value, color = "Sub-Saharan African Countries", linetype = "Sub-Saharan African Countries"),
+      size = size_line, color = "#8eb67d"
     ) +
-  ylab("") +
-  xlab("") + 
-  coord_flip() + 
-  geom_hline(
-    data = sub %>% filter(variable %in% vars), 
-    aes(yintercept = value, color="Sub-Saharan African Countries",  linetype="Sub-Saharan African Countries"),
-    size = size_line,
-    color = "#8eb67d"
-
+    geom_hline(
+      data = low %>% filter(variable %in% vars), 
+      aes(yintercept = value, linetype = "Low-middle Income Countries"),
+      size = size_line, color = "#686868"
     ) +
-  geom_hline(
-    data = low %>% filter(variable %in% vars), 
-    aes(yintercept = value, linetype = "Low-middle Income Countries"),
-    size = size_line,
-    color="#686868"
-    )+
-  geom_hline(
-    data = high %>% filter(variable %in% vars), 
-    aes(yintercept = value, color="High Income Countries",  linetype="High Income Countries"),
-    size = size_line,
-    color = "black"
-
+    geom_hline(
+      data = high %>% filter(variable %in% vars), 
+      aes(yintercept = value, color = "High Income Countries", linetype = "High Income Countries"),
+      size = size_line, color = "black"
     ) +
-guides(
-  color = guide_legend(title="Regional\nAverages", reverse=TRUE)
-  ) +
-
+    guides(color = guide_legend(title = "Regional\nAverages", reverse = TRUE)) +
+    scale_linetype_manual(name = "Regional\nAverages", values = c(1, 2, 1), 
+                          guide = guide_legend(title = "Regional\nAverages", reverse = TRUE, 
+                                               override.aes = list(color = c("#8eb67d", "#686868", "black")))) +
+    theme_minimal() +
+    theme_spac() +
     
- # scale_color_manual("Regional\nAverages", values = colo) +
+    # Assign labels to the countries in the plot
+    geom_text(
+      aes(label = ifelse(country %in% c("South Africa", "Malawi", "Niger", "Tanzania", "Ghana", "Ethiopia", "Uganda", "Nigeria"), country, ""),
+          hjust = ifelse(country == "South Africa", 0.9, -0.05)), 
+      color = "#344771", 
+      size = 4.5
+    ) 
     
-     scale_linetype_manual(name = "Regional\nAverages", values = c(1, 2, 1), 
-                      guide = guide_legend(title="Regional\nAverages", reverse=TRUE, override.aes = list(color = c("#8eb67d", "#686868", "black"))))+
-                      
-  theme_minimal() +
-
-  theme_spac() +
-  geom_text(label = rep(c("South Africa", "Malawi", "Niger", "Tanzania", "Ghana", "Ethiopia", "Uganda", "Nigeria"),4), hjust = ifelse(counn== 'South Africa', 1, -0.05), color="#344771", size=5)
-  return (graph)
-  
+  return(graph)
 }
 ```
 
@@ -2501,11 +2485,20 @@ wrap_elements(panel = depratov60  + oldageratov60 ) +
 ```
 
 
-```{r environ, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
+```{r hea_care, echo=FALSE, fig.height=7.5, fig.width=15, dev = c("png"), dpi=100}
 # Figure 7: Social Protection across Selected Sub-Saharan African Countries
 main_outco(
   vars=var_env,
   labs=labeller_environ
+  )
+
+```
+
+```{r environ, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
+#Figure 8: Health Spending and Health Care Capacity across Selected Sub-Saharan African Countries
+main_outco(
+  vars=var_hea,
+  labs=labeller_health
   )
 ```
 
@@ -2611,13 +2604,6 @@ plot_grid(b, c, d, e, f, i, ncol=1, align='v', rel_heights = c(7.7, 5, 5.8, 5, 5
 
 \end{landscape}
 
-```{r hea_care, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
-# Figure 8: Health and Health Care
-main_outco(
-  vars=var_hea,
-  labs=labeller_health
-  )
-```
 
 # Appendix
 
@@ -2733,5 +2719,4 @@ plot_grid(b, c, d, e, f, i, ncol=1, align='v', rel_heights = c(7.7, 5, 5.8, 5, 5
 ```
 
 \end{landscape}
-
 
