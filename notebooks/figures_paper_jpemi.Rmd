@@ -2507,7 +2507,8 @@ main_outco(
 
 \begin{landscape}
 ```{r outcomes_aggregate_weighted, fig.cap="Employment. Age Group and Gender.", echo=FALSE,  fig.height=25, fig.width=25, dev = c("png"), dpi=100}
-# Figure 4: Employment, Health, and Living Arrangements over the Life Course: Aggregate
+# Figure 3: Employment, Health, & Living Arrangements over the Life Course: Aggregate
+
 fac_row_agg_count_out(
   outcomes_weighted_country,
   measures,
@@ -2519,7 +2520,7 @@ fac_row_agg_count_out(
       labels=lab_age,
       position="bottom"
       )+
-  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '-', '1'))
+  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '–', '1'))
 
 ```
 
