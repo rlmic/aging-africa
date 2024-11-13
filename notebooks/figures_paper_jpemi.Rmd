@@ -31,6 +31,7 @@ knitr::opts_chunk$set(
 ```{r packages, include=FALSE}
 # Load & Install Packages
 pacman::p_load(
+  
   ggtext,
   tidyr, 
   haven, 
@@ -1488,7 +1489,7 @@ theme_top <- function(
 
 
     #axis.text.x = element_blank(),
-    legend.position="top", 
+    legend.position = "none", 
     legend.justification = "right",
     axis.ticks.x = element_blank(),
     legend.title=element_blank(),
@@ -1500,7 +1501,7 @@ theme_top <- function(
     legend.key.size = unit(6,"line"), 
 
     text = element_text(size = size_text, color=color), 
-    strip.text = element_markdown(color = color, size=size_title),
+    #strip.text = ggtext::element_markdown(),
     axis.title.y = element_markdown(angle = 0, size=size_title),
     panel.spacing.x = unit(5, "lines"),
     panel.spacing.y = unit(7, "lines"),
@@ -1574,42 +1575,39 @@ theme_bottom <- function(
 
   return (bottom)
 }
-
 get_count <- function(
     var
 ){
   ssa0 <- ssa
+  ssa0
   ssa0$country = ''
   ssa0$region = "**Average**"
-  ssa <- rbind(ssa0, ssa)
+  ssa <- bind_rows(ssa0, ssa)
   annot0 = ssa %>% 
   filter(
     age==20 & gender=='Male'
     ) %>% 
   group_by(age_group5, country, gender, region) %>% 
-  summarise(vari = mean(get(var), na.rm=TRUE))
+    summarise(vari = mean(get(var), na.rm = TRUE), .groups = 'drop')
   
   
-
+  # Calculate count for age >= 20 and non-NA gender
   annot1 = ssa %>% 
-    filter(
-      age>=20 & !is.na(gender) 
-      ) %>% group_by(country, gender) %>% 
-    summarise(
-      n = sum(!is.na(country)&!is.na(get(var)))
-      ) %>% 
+    filter(age >= 20 & !is.na(gender)) %>% 
+    group_by(country, gender) %>% 
+    summarise(n = sum(!is.na(country) & !is.na(get(var))), .groups = 'drop') %>%
     group_by(country) %>% 
-    summarise(n = paste0("N=", comma(sum(n), digits = 0)))
+    summarise(n = paste0("N=", scales::comma(sum(n), accuracy = 1)), .groups = 'drop')
   
-  count <- merge(annot0, annot1, by="country")
+  # Merge the two summaries
+  count <- merge(annot0, annot1, by = "country")
   
-  return (count)
+  return(count)
 }
-
 
 fac_row_popu <- function(
     forma_theme,
-    colors=c("#8eb67d","#000C66"),
+    colors = c("Female" = "#8eb67d", "Male" = "#000C66"),
     breaks=c("20","25","30", "35", "40", "45", "50", "55", "60", "65", "70", "75", "80"),
     labels=c("20", "", "", "", "40", "", "",  "", "60", "", "", "", "80+"),
     size_count=12
@@ -1617,12 +1615,12 @@ fac_row_popu <- function(
 ){
   
   dat = get_count("gender")
+  dat
   subsah <- ssa
   subsah$country <- ''
   subsah$region <-  "**Average**"
-  ssa <- rbind(ssa, subsah)
+  ssa <- bind_rows(ssa, subsah)
   ssa = ssa %>% filter(!age_group5  %in% c('0', '5', '10', '15'))
-
   graph <- ssa %>%
     filter(age>=20  & !is.na(gender))%>%  ggplot(
       aes(x = age_group5, fill=gender)
@@ -1640,16 +1638,11 @@ fac_row_popu <- function(
       colour="#14213D",
       hjust = -0.2,
       size = size_count
-      ) +
-    forma_theme
-  
-    #graph = graph + geom_rect(
-    #    aes(xmin = "60", xmax = Inf, ymin = -Inf, ymax = Inf),
-    #    alpha = 0.01,
-    #    fill = "#8eb67d"
-    #      )
+      ) + forma_theme
+
   return (graph)
 }
+
 
 fac_row__<- function(
     var,
@@ -1789,7 +1782,7 @@ fac_row <- function(
         age>=20 & !is.na(gender) 
         ) %>% 
       group_by(age_group5, country, gender, region) %>% 
-      summarise(vari = weighted.mean(get(var), weights_survey, na.rm=TRUE)) 
+  summarise(vari = weighted.mean(get(var), weights_survey, na.rm = TRUE), .groups = "drop")
     data$age_group5 <- as.factor(data$age_group5)
 
     ssa_agg = ssa_agg %>% mutate(vari = get(var))
@@ -1826,7 +1819,7 @@ fac_row <- function(
         age>=20 & !is.na(gender) 
         ) %>% 
       group_by(age_group5, country, gender, region) %>% 
-      summarise(vari = mean(get(var), na.rm=TRUE))
+  summarise(vari = weighted.mean(get(var), weights_survey, na.rm = TRUE), .groups = "drop")
     data$age_group5 <- as.factor(data$age_group5)
 
     ssa_agg_non$gender <- as.factor(ssa_agg_non$female)
@@ -1864,7 +1857,7 @@ fac_row <- function(
   
   }
   
-  graph = ggplot(
+    graph = ggplot(
       data,
       aes(x = age_group5, y = vari, colour = gender, group=gender)
       ) + 
@@ -1887,8 +1880,7 @@ fac_row <- function(
         aes(xmin = "60", xmax = Inf, ymin = -Inf, ymax = Inf),
         alpha = 0.005,
         fill = "#8eb67d"
-          ) +
-    forma_theme
+          ) + forma_theme
 
   return (graph)
 }
@@ -2033,108 +2025,149 @@ fac_row_agg_count_dis <- function(
   
   return (graph)
 }
-
-graph_agg_data_main <- function(
-      weighted=TRUE,
-      breaks=bre_age,
-      labels=lab_age
-      ){
+graph_agg_data_main <- function(weighted = TRUE, breaks = bre_age, labels = lab_age) {
+  
   a <- fac_row_popu(theme_top()) + 
-    labs(y = "**Observations<br>(Count)**", face='bold') +
+    labs(y = "**Observations<br>(Count)**", face = 'bold') +
     scale_x_discrete(
-      breaks=breaks,
-      labels=labels,
-      position="bottom"
-      ) + 
+      breaks = breaks,
+      labels = labels,
+      position = "bottom"
+    ) + 
     scale_y_continuous(
-      breaks=c(0, 20000, 40000), 
+      breaks = c(0, 20000, 40000), 
       limits = c(0, 50000), 
       labels = c('0', '20K', '40K')
-      )
+    )
   
-   b <- fac_row("disability", theme_middle(), weighted) + 
-    ylim(0, 1) + 
-    labs(y = "           Functional     \n           Limitations     \n           (Proportion)     ", x = "Age")+
+  b <- fac_row("disability", theme_middle(), weighted) + 
+    labs(y = "           Functional     \n           Limitations     \n           (Proportion)     ", x = "Age") +
     scale_x_discrete(
-        breaks=breaks,
-        labels=labels,
-        position="top"
-        )+scale_y_continuous(breaks=c(0,0.5, 1), limits = c(0, 1.2), labels = c('0', '-', '1'))
+      breaks = breaks,
+      labels = labels,
+      position = "top"
+    ) + 
+    scale_y_continuous(
+      breaks = c(0, 0.5, 1), 
+      limits = c(0, 1.2), 
+      labels = c('0', '-', '1')
+    ) +
     theme(legend.position = "none")
-   c <- fac_row("ill_inj", theme_middle(), weighted) + 
-    ylim(0, 1) + 
-    labs(y = "Illness & Injury\n(Proportion)")+ 
-    scale_x_discrete(
-        breaks=breaks,
-        labels=labels,
-        position="top"
-        )+scale_y_continuous(breaks=c(0,0.5, 1), limits = c(0, 1.2), labels = c('0', '-', '1'))
-   d <- fac_row("ill_inj_stopactivity", theme_middle(), weighted) +
-    ylim(0, 1) + labs(y = "     Stopped Activities\n(Proportion)")+
-    scale_x_discrete(
-        breaks=breaks,
-        labels=labels,
-        position="top"
-        )+scale_y_continuous(breaks=c(0,0.5, 1), limits = c(0, 1.2), labels = c('0', '-', '1'))
-  e <- fac_row("depressed", theme_middle(), weighted) + 
-    ylim(0, 1) +
-    labs(y = "  Depression\n  Or Psych Distress\n  (Proportion)", x = "Age")+ 
-    scale_x_discrete(
-        breaks=breaks,
-        labels=labels,
-        position="top"
-        ) +scale_y_continuous(breaks=c(0,0.5, 1), limits = c(0, 1.2), labels = c('0', '-', '1'))
   
-  f <- fac_row("work_any", theme_middle(), weighted) +
-    ylim(0, 1) +
-    labs(y = "Employment\nStatus\n(Proportion)")+ 
+  c <- fac_row("ill_inj", theme_middle(), weighted) + 
+    labs(y = "Illness & Injury\n(Proportion)") + 
     scale_x_discrete(
-        breaks=breaks,
-        labels=labels,
-        position="top"
-        ) +scale_y_continuous(breaks=c(0,0.5, 1), limits = c(0, 1.2), labels = c('0', '-', '1'))
+      breaks = breaks,
+      labels = labels,
+      position = "top"
+    ) + 
+    scale_y_continuous(
+      breaks = c(0, 0.5, 1), 
+      limits = c(0, 1.2), 
+      labels = c('0', '-', '1')
+    )
+  
+  d <- fac_row("ill_inj_stopactivity", theme_middle(), weighted) + 
+    labs(y = "     Stopped Activities\n(Proportion)") +
+    scale_x_discrete(
+      breaks = breaks,
+      labels = labels,
+      position = "top"
+    ) + 
+    scale_y_continuous(
+      breaks = c(0, 0.5, 1), 
+      limits = c(0, 1.2), 
+      labels = c('0', '-', '1')
+    )
+  
+  e <- fac_row("depressed", theme_middle(), weighted) + 
+    labs(y = "  Depression\n  Or Psych Distress\n  (Proportion)", x = "Age") + 
+    scale_x_discrete(
+      breaks = breaks,
+      labels = labels,
+      position = "top"
+    ) + 
+    scale_y_continuous(
+      breaks = c(0, 0.5, 1), 
+      limits = c(0, 1.2), 
+      labels = c('0', '-', '1')
+    )
+  
+  f <- fac_row("work_any", theme_middle(), weighted) + 
+    labs(y = "Employment\nStatus\n(Proportion)") + 
+    scale_x_discrete(
+      breaks = breaks,
+      labels = labels,
+      position = "top"
+    ) + 
+    scale_y_continuous(
+      breaks = c(0, 0.5, 1), 
+      limits = c(0, 1.2), 
+      labels = c('0', '-', '1')
+    )
+  
   g <- fac_row("work_hrs", theme_middle(), weighted) + 
-    labs(y = "Weekly\nEmployment Status\n(Hours)", x = "Age")+ 
+    labs(y = "Weekly\nEmployment Status\n(Hours)", x = "Age") + 
     scale_x_discrete(
-        breaks=breaks,
-        labels=labels,
-        position="top"
-        ) + scale_y_continuous(breaks=c(0,20, 40), limits = c(0, 50), labels = c('0', '-', '40'))
+      breaks = breaks,
+      labels = labels,
+      position = "top"
+    ) + 
+    scale_y_continuous(
+      breaks = c(0, 20, 40), 
+      limits = c(0, 50), 
+      labels = c('0', '-', '40')
+    )
+  
   h <- fac_row("notmarried", theme_middle()) + 
-    ylim(0, 1) + 
-    labs(y = "Unmarried\n(Proportion)")+ 
+    labs(y = "Unmarried\n(Proportion)") + 
     scale_x_discrete(
-        breaks=breaks,
-        labels=labels,
-        position="top"
-        ) +scale_y_continuous(breaks=c(0,0.5, 1), limits = c(0, 1.2), labels = c('0', '-', '1'))
+      breaks = breaks,
+      labels = labels,
+      position = "top"
+    ) + 
+    scale_y_continuous(
+      breaks = c(0, 0.5, 1), 
+      limits = c(0, 1.2), 
+      labels = c('0', '-', '1')
+    )
+  
   i <- fac_row("lives_alone", theme_middle(), weighted) + 
-    ylim(0, 1) + 
-    labs(y = "Living alone\n(Proportion)", x = "Age")+ 
+    labs(y = "Living alone\n(Proportion)", x = "Age") + 
     scale_x_discrete(
-        breaks=breaks,
-        labels=labels,
-        position="top"
-        ) + scale_y_continuous(breaks=c(0,0.5, 1), limits = c(0, 1.2), labels = c('0', '-', '1'))
-  j <- fac_row("urban", theme_bottom(), weighted) +
-    ylim(0, 1) +
-    labs(y = " Urban Status\n(Proportion)", x = "\n \n\nAge", color="#344771") + 
+      breaks = breaks,
+      labels = labels,
+      position = "top"
+    ) + 
+    scale_y_continuous(
+      breaks = c(0, 0.5, 1), 
+      limits = c(0, 1.2), 
+      labels = c('0', '-', '1')
+    )
+  
+  j <- fac_row("urban", theme_bottom(), weighted) + 
+    labs(y = " Urban Status\n(Proportion)", x = "\n \n\nAge", color = "#344771") + 
     scale_x_discrete(
-        breaks=breaks,
-        labels=labels,
-        position="bottom"
-        )+theme(legend.position = "none")+scale_y_continuous(breaks=c(0,0.5, 1), limits = c(0, 1.2), labels = c('0', '-', '1'))
-
+      breaks = breaks,
+      labels = labels,
+      position = "bottom"
+    ) + 
+    scale_y_continuous(
+      breaks = c(0, 0.5, 1), 
+      limits = c(0, 1.2), 
+      labels = c('0', '-', '1')
+    )
+  
   plot_grid(
-    a, b, c,  d, e,  f,  g, h,  i,  j,  
-    rel_heights = c(9.5, 5,  5, 5, 5, 5,5, 5, 5,7.5),
+    a, b, c, d, e, f, g, h, i, j,  
+    rel_heights = c(9, 5,  5, 5, 5, 5, 5, 5, 5, 7.5),
     ncol = 1, 
     nrow = 10, 
     align = "v", 
     labels = c("*", "A.-", "B.-", "C.-","D.-", "E.-", "F.-", "G.-", "H.-", "I.-"),
     label_size = 38,
     label_colour = "#14213D"
-    )
+  )
 }
 ```
 
@@ -2548,14 +2581,181 @@ main_outco(
 
 
 
+
+
+# Appendix
+
 \begin{landscape}
+
+
+```{r ov65_dep_rat, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
+
+# Online Appendix Figure A1: Dependency Ratios (over-65)
+
+wrap_elements(panel = depratov65  + oldageratov65) +
+  labs(tag = "**Year**") +
+  theme(
+    plot.tag = element_markdown(size=20, color="#344771"),
+    plot.tag.position = "bottom"
+  )
+```
 
 
 
 ```{r outcomes_gender_weighted, fig.cap="Employment. Age Group and Gender. Countries. Weighted.", echo=FALSE, fig.height=70, fig.width=45, dev = c("png"), dpi=100}
-# Figure 5: Employment, Health, and Living Arrangements over the Life Course: Country Level
+#Online Appendix Figure A3: Employment, Health, & Living Arrangements over the Life Course by Country and Gender WEIGHTED
 graph_agg_data_main(weighted=TRUE)
 
+```
+
+
+```{r outcomes_aggregate_nonweighted, fig.cap="Employment. Age Group and Gender.", echo=FALSE,  fig.height=25, fig.width=25, dev = c("png"), dpi=100}
+# Online Appendix Figure A5: Employment, Health, & Living Arrangements over the Life Course: Aggregate, no weights
+fac_row_agg_count_out(
+  outcomes_nonweighted_country,
+  measures,
+  measures_labs_agg,
+  theme_top_count())+ 
+  labs(y = "Proportion", x = "Age") + 
+  scale_x_discrete(
+      breaks=bre_age,
+      labels=lab_age,
+      position="bottom"
+      )+
+  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '–', '1'))
+
+```
+
+
+
+```{r outcomes_gender_nonweighted, fig.cap="Outcomes by Age Group and Gender. Not Weighted", echo=FALSE, fig.height=60, fig.width=45, dev = c("png"), dpi=100}
+# Appendix: Figure 4 - Employment, Health, & Living Arrangements over the Life Course: Country-level, no weights
+graph_agg_data_main(weighted=FALSE)
+
+```
+
+
+```{r}
+fac_row__<- function(
+    var,
+    forma_theme,
+    weighted=TRUE,
+    colors=c("#8eb67d","#000C66"),
+    size_count=12
+){
+  
+  dat = get_count(var)
+  
+  if (weighted) {
+    data <- ssa %>% 
+      filter(
+        age>=20 & !is.na(gender) 
+        ) %>% 
+      group_by(age_group5, country, gender, region) %>% 
+      summarise(vari = weighted.mean(get(var), weights_survey, na.rm=TRUE)) 
+    data$age_group5 <- as.factor(data$age_group5)
+
+    ssa_agg = ssa_agg %>% mutate(vari = get(var))
+    ssa_agg = ssa_agg %>% 
+        mutate(
+          female = case_when(
+          female==0
+           ~ 'Male',
+          female ==1
+          ~ 'Female',
+          TRUE ~ NA),
+          work_hrs = case_when(
+            work_hrs>=140 & work_hrs<=168 ~ 140,
+            work_hrs>168 ~ NA,
+            TRUE ~ work_hrs
+            )
+          )
+    ssa_agg$gender <- as.factor(ssa_agg$female)
+    ssa_agg <- ssa_agg %>% 
+      filter(
+        !is.na(gender) 
+        ) 
+    ssa_agg$age_group5 <- as.factor(ssa_agg$age_group5)
+    ssa_agg = ssa_agg %>% filter(!age_group5  %in% c('0', '5', '10', '15'))
+
+    ssa_agg$country = ''
+    ssa_agg$region =  "**Average**"
+    
+    data=bind_rows(data,ssa_agg)
+    
+  } else {
+    data <- ssa %>% 
+      filter(
+        age>=20 & !is.na(gender) 
+        ) %>% 
+      group_by(age_group5, country, gender, region) %>% 
+      summarise(vari = mean(get(var), na.rm=TRUE))
+    data$age_group5 <- as.factor(data$age_group5)
+
+    ssa_agg_non$gender <- as.factor(ssa_agg_non$female)
+    ssa_agg_non <- ssa_agg_non %>% 
+      filter(
+        !is.na(gender) 
+        ) 
+    ssa_agg_non = ssa_agg_non %>% mutate(vari = get(var))
+    ssa_agg_non = ssa_agg_non %>% 
+        mutate(
+          female = case_when(
+          female==0
+           ~ 'Male',
+          female ==1
+          ~ 'Female',
+          TRUE ~ NA),
+          work_hrs = case_when(
+            work_hrs>=140 & work_hrs<=168 ~ 140,
+            work_hrs>168 ~ NA,
+            TRUE ~ work_hrs
+            )
+          )
+    ssa_agg_non$gender <- as.factor(ssa_agg_non$female)
+    ssa_agg_non <- ssa_agg_non %>% 
+      filter(
+        !is.na(gender) 
+        ) 
+    ssa_agg_non$age_group5 <- as.factor(ssa_agg_non$age_group5)
+    
+    ssa_agg_non$country = ''
+    ssa_agg_non$region =  "**Average**"
+    ssa_agg_non = ssa_agg_non %>% filter(!age_group5  %in% c('0', '5', '10', '15'))
+
+    data=bind_rows(data,ssa_agg_non)
+  
+  }
+  
+  graph = ggplot(
+      data,
+      aes(x = age_group5, y = vari, colour = gender, group=gender)
+      ) + 
+    theme_minimal() +
+    geom_line(size = 3, aes(linetype=gender)) +
+        facet_nested(~factor(region, levels=regions) +country, scales='free_y', space="free_y", nest_line = element_line(linetype = 1)) +     force_panelsizes(cols = c(1, rep(0.85, 7))) +
+
+   scale_color_manual(values = colors) +
+    
+    scale_linetype_manual(values=c("solid", "longdash"))  +
+    geom_text(
+      data = dat, 
+      label=dat$n,
+      aes(label = paste0("N=", n), y = Inf, x  = -Inf),
+      vjust = 1,
+      colour="#14213D",
+      hjust = -0.2,
+      size = size_count
+      ) +
+      geom_rect(
+        aes(xmin = "60", xmax = Inf, ymin = -Inf, ymax = Inf),
+        alpha = 0.005,
+        fill = "#8eb67d"
+          ) +
+    forma_theme
+
+  return (graph)
+}
 ```
 
 
@@ -2605,55 +2805,9 @@ plot_grid(b, c, d, e, f, i, ncol=1, align='v', rel_heights = c(7.7, 5, 5.8, 5, 5
 
 ```
 
-\end{landscape}
-
-
-# Appendix
-
-\begin{landscape}
-
-
-```{r ov65_dep_rat, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
-
-# Appendix: Figure 1
-wrap_elements(panel = depratov65  + oldageratov65) +
-  labs(tag = "**Year**") +
-  theme(
-    plot.tag = element_markdown(size=20, color="#344771"),
-    plot.tag.position = "bottom"
-  )
-```
-
-
-```{r outcomes_aggregate_nonweighted, fig.cap="Employment. Age Group and Gender.", echo=FALSE,  fig.height=25, fig.width=25, dev = c("png"), dpi=100}
-# Appendix: Figure 3 - Employment, Health, and Living Arrangements over the Life Course: Aggregate
-fac_row_agg_count_out(
-  outcomes_nonweighted_country,
-  measures,
-  measures_labs_agg,
-  theme_top_count())+ 
-  labs(y = "Proportion", x = "Age") + 
-  scale_x_discrete(
-      breaks=bre_age,
-      labels=lab_age,
-      position="bottom"
-      )+
-  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '-', '1'))
-
-```
-
-
-
-```{r outcomes_gender_nonweighted, fig.cap="Outcomes by Age Group and Gender. Not Weighted", echo=FALSE, fig.height=60, fig.width=45, dev = c("png"), dpi=100}
-# Appendix: Figure 4 - Employment, Health, & Living Arrangements over the Life Course: Country-level, no weights
-graph_agg_data_main(weighted=FALSE)
-
-```
-
-
 
 ```{r disabilities_aggregate_nonweighted, echo=FALSE,  fig.height=12, fig.width=19, dev = c("png"), dpi=100}
-# Appendix: Figure 5 - Functional Limitations over the Life Course: Aggregate, no weights
+# Online Appendix Figure A8: Functional Limitations over the Life Course: Aggregate, no weights
 fac_row_agg_count_dis(
   outcomes_nonweighted_country_lim,
   limitations,
@@ -2670,7 +2824,7 @@ fac_row_agg_count_dis(
       labels=lab_age,
       position="bottom"
       )+ 
-  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '-', '1'), limits = c(0, 1))
+  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '–', '1'), limits = c(0, 1))
 
 ```
 
