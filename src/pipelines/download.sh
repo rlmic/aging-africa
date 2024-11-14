@@ -22,6 +22,8 @@ cp "${ssa_pat}allcountries_means5year_weightspopsurvey_countries.dta" "${ssa_dat
 cp "${ssa_pat}population_projections_allcountries.dta" "${ssa_dat}"
 cp "${ssa_pat}allcountries_means5year_noweights_all.dta" "${ssa_dat}"
 cp "${ssa_pat}allcountries_means5year_noweights_countries.dta" "${ssa_dat}"
+cp "${ssa_pat}allcountries_means5year_weightspopsurvey_countrygender.dta" "${ssa_dat}"
+cp "${ssa_pat}allcountries_means5year_noweights_countrygender.dta" "${ssa_dat}"
 
 ### 2. Plots Aging Paper
 
