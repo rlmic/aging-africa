@@ -154,7 +154,8 @@ over60 = over60 %>%
 
 ```{r}
 countries <- c("China", "India", "Sub-Saharan Africa")
-colors_scheme = c("#800000", "#2f4b7c",  "#8eb67d")
+colors_scheme = c("#9b111e", "#1f77b4",  "#8eb67d")
+
 breaks_numer = c(1990,2020,2050, 2100)
 breaks_text = c("1990","2020","2050", "2100")
 
@@ -215,9 +216,10 @@ depratov60 <- ggplot(
   dep_rat_ov60, aes(year, ratio, group=countryregion)
   ) +
   geom_line(
-    aes(color = countryregion, size=countryregion)
+    aes(color = countryregion, size=countryregion, linetype = countryregion)
     ) + 
-    scale_size_manual(values = c(0.9,0.9, 1.6)) +
+    scale_size_manual(values = c(1.4,1.4, 1.4)) +
+  scale_linetype_manual(values = c("dotted", "dashed", "solid"))+
     theme_minimal() +
     geom_text_repel(
     aes(color = countryregion, label = name_lab),
@@ -272,9 +274,11 @@ depratov60 <- ggplot(
 oldageratov60 = ggplot(old_age_rat_ov60, aes(year, ratio, group=countryregion)) +
   theme(legend.position = "none") +
   geom_line(
-    aes(color = countryregion, size=countryregion)
+    aes(color = countryregion, size=countryregion, linetype = countryregion)
     ) + 
-    scale_size_manual(values = c(0.9,0.9, 1.6)) +
+    scale_size_manual(values = c(1.4,1.4, 1.4)) +
+  scale_linetype_manual(values = c("dotted", "dashed", "solid"))+
+
   scale_color_manual(
     values = colors_scheme
     ) +  
@@ -534,11 +538,11 @@ pal = c(
      # sub-saharan africa
     "#8eb67d",
      # india
-    "#2f4b7c",
+    "#1f77b4",
      # china
-    "#800000",
+    "#9b111e",
      # rest of the world
-    "#C7C9CB"
+    "#E2E4E8"
 
   )
 
@@ -969,8 +973,9 @@ fig1c = ggplot(
   totpop %>% filter(countryregion != 'Rest of World'), 
   aes(condition, measurement, fill = countryregion, label = countryregion)
   ) +
-  geom_line(aes(color = countryregion, size = countryregion)) + 
-  scale_size_manual(values = c(1.9, 0.9, 0.9)) +
+  geom_line(aes(color = countryregion, size = countryregion, linetype = countryregion)) + 
+  scale_size_manual(values = c(1.4, 1.4, 1.4)) +
+  scale_linetype_manual(values = c("solid", "dashed", "dotted"))+
   geom_label(
     data = . %>% mutate(
       condition = case_when(
@@ -1090,9 +1095,11 @@ fig1d = ggplot(
   over60 %>% filter(countryregion != 'Rest of World'), 
   aes(condition, measurement, fill = countryregion, label = countryregion)
 ) +
-  geom_line(aes(color = countryregion, size = countryregion)) + 
+  geom_line(aes(color = countryregion, size = countryregion, linetype = countryregion)) + 
   geom_point(aes(color = countryregion)) +
-  scale_size_manual(values = c(1.9, 0.9, 0.9)) +
+  scale_size_manual(values = c(1.4, 1.4, 1.4)) +
+  scale_linetype_manual(values = c("solid", "dashed", "dotted"))+
+
   geom_label(data = . %>% mutate(
     condition = case_when(
       condition %in% c(1990) ~ NA,
@@ -1169,9 +1176,9 @@ countries = c(
 
 regions = c(
   "**Average**", 
-  '**1.-** Eastern Africa <br>', 
-  '**2.-** Southern Africa <br>', 
-  '**3.-** Western Africa <br>'
+  '**1.-** Eastern Africa<br>', 
+  '**2.-** Southern Africa<br>', 
+  '**3.-** Western Africa<br>'
   )
 
 counn = rep(countries, 4)
@@ -1462,7 +1469,7 @@ theme_top_a <- function(
     legend.key.size = unit(6,"line"), 
 
     text = element_text(size = size_text, color=color), 
-    strip.text = element_markdown(color = color, size=size_title),
+    strip.text = element_text(color = color, face = "bold", size=size_title),
     axis.title.y = element_text(angle = 0, size=size_title),
     panel.spacing.x = unit(5, "lines"),
     panel.spacing.y = unit(7, "lines"),
@@ -1500,7 +1507,7 @@ theme_top <- function(
     legend.key.size = unit(6,"line"), 
 
     text = element_text(size = size_text, color=color), 
-    #strip.text = ggtext::element_markdown(),
+    strip.text = element_text(size = size_text, color=color, face = "bold"),
     axis.title.y = element_markdown(angle = 0, size=size_title),
     panel.spacing.x = unit(5, "lines"),
     panel.spacing.y = unit(7, "lines"),
@@ -1963,7 +1970,7 @@ fac_row_agg_count_out <- function(
     theme_minimal() +
     #geom_line(size = 1) +
     geom_line(size=1.1) +
-    geom_line(data = filter(data, (country ==  "**Average**" & condition!='healthinsurance_ever')), size = 2)+#, linetype="dashed")+
+    geom_line(data = filter(data, (country ==  "**Average**" & condition!='healthinsurance_ever')), size = 2, linetype="dotdash")+#, linetype="dashed")+
   geom_text(x = "40", y = 0.25, aes(label = label), data = f_labels, size=9, color="#050A30")+
 
     scale_fill_manual(values = c("#D3D3D3")) +
@@ -2014,7 +2021,7 @@ fac_row_agg_count_dis <- function(
         ) +
     theme_minimal() +
     geom_line(size=1.1) +
-    geom_line(data = filter(data, (country ==  "**Average**" & str_detect(condition, 'diff'))), size = 2)+
+    geom_line(data = filter(data, (country ==  "**Average**" & str_detect(condition, 'diff'))), size = 2, linetype="dotdash")+
   geom_text(x = "40", y = 0.15, aes(label = label), data = f_labels, size=9, color="#050A30")+
 
     scale_fill_manual(values = c("#D3D3D3")) +
@@ -2194,7 +2201,7 @@ main_outco <- function(
     geom_hline(
       data = sub %>% filter(variable %in% vars), 
       aes(yintercept = value, color = "Sub-Saharan African Countries", linetype = "Sub-Saharan African Countries"),
-      size = size_line, color = "#8eb67d"
+      size = size_line+0.5, color = "#8eb67d"
     ) +
     geom_hline(
       data = low %>% filter(variable %in% vars), 
@@ -2207,7 +2214,7 @@ main_outco <- function(
       size = size_line, color = "black"
     ) +
     guides(color = guide_legend(title = "Regional\nAverages", reverse = TRUE)) +
-    scale_linetype_manual(name = "Regional\nAverages", values = c(1, 2, 1), 
+    scale_linetype_manual(name = "Regional\nAverages", values = c(3, 2, 1), 
                           guide = guide_legend(title = "Regional\nAverages", reverse = TRUE, 
                                                override.aes = list(color = c("#8eb67d", "#686868", "black")))) +
     theme_minimal() +
@@ -2490,6 +2497,15 @@ newggslopegraph(
 ```
 
 
+
+
+
+```{r}
+totpop
+```
+
+
+
 ```{r ov60_pop, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
 # Figure 2: Projected Population Growth and Dependency Ratios
 # Panels A & B
@@ -2625,26 +2641,13 @@ fac_row_agg_count_out_gender_ <- function(
   )
   f_labels2$condition = factor(f_labels2$condition, levels = condition_order)
 
-  f_labels3 <- data.frame(
-    condition = condition_order,  
-    female = c("Female", "", "", "", "", "", "", "", ""),
-    label = c("", "", "", "",  "", "", "","", "Male")
-  )
-  f_labels3$condition = factor(f_labels3$condition, levels = condition_order)
-
-  f_labels4 <- data.frame(
-    condition = condition_order,  
-    female = c("Female",  "", "", "", "", "", "", "", ""),
-    label = c("", "", "", "", "", "", "", "", "Female")
-  )
-  f_labels4$condition = factor(f_labels4$condition, levels = condition_order)
 
   data$female <- factor(data$female, levels = c(0, 1), labels = c("Male", "Female"))
   
   graph <-data %>%  
     filter(condition!='healthinsurance_ever') %>% 
     ggplot(
-      aes(x = age_group5, y = measurement, group = female, color = female, linetype = female) # Added linetype aesthetic
+    aes(x = age_group5, y = measurement, group = female, color = female, linetype = female, size = female)
       ) +
     facet_wrap(
       . ~condition, 
@@ -2661,13 +2664,18 @@ fac_row_agg_count_out_gender_ <- function(
         ) +
     theme_minimal() +
     #geom_line(size = 1) +
-    geom_line(size=1.1) +
+  geom_line(aes(size = female)) +  # Apply size mapping based on the 'female' variable
     #geom_line(data = filter(data, (country ==  "**Average**" & condition!='healthinsurance_ever')), size = 2)+#, linetype="dashed")+
-  geom_text(x = "40", y = 0.25, aes(label = label), data = f_labels, size=9, color="#050A30")+
-
+    geom_text(x = "65", y = 0.25, aes(label = label), data = f_labels, size = 9, color = "#050A30" ) +
+    geom_text(x = "65", y = 0.55, aes(label = label), data = f_labels2, size = 9, color = "#8eb67d") +
     scale_fill_manual(values = c("#D3D3D3")) +        
     scale_color_manual(values = c("Male" = "#050A30", "Female" = "#8eb67d")) +  # Color Female lines with #8eb67d
-    scale_linetype_manual(values = c("Male" = "longdash", "Female" = "solid")) +  # Line types for Male and Female+
+
+      scale_linetype_manual(values = c("Male" = "longdash", "Female" = "solid")) +
+
+          scale_size_manual(values = c("Male" = 1, "Female" = 2)) +  # Thicker line for Female
+  coord_cartesian(clip = "off")  +# Ensure text isn't clipped
+
     forma_theme
   
   
@@ -2678,9 +2686,12 @@ fac_row_agg_count_out_gender_ <- function(
 
 
 
-```{r out_agg_ctr_wgt_gen, fig.cap="Employment. Age Group and Gender.", echo=FALSE,  fig.height=25, fig.width=25, dev = c("png"), dpi=100}
 
 
+
+```{r out_agg_gen_wgt, fig.cap="Employment. Age Group and Gender.", echo=FALSE,  fig.height=25, fig.width=25, dev = c("png"), dpi=100}
+
+# Figure 4: Employment, Health, & Living Arrangements over the Life Course: by Gender
 fac_row_agg_count_out_gender_(
   out_dis_weigted_gender,
   measures,
@@ -2693,7 +2704,7 @@ fac_row_agg_count_out_gender_(
       labels=lab_age,
       position="bottom"
       )+
-  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '–', '1'))
+  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '–', '1'), limits = c(0, 1))
 ```
 
 
@@ -2774,26 +2785,12 @@ fac_row_agg_gen_dis <- function(
   )
   f_labels2$condition = factor(f_labels2$condition, levels = condition_order)
 
-  f_labels3 <- data.frame(
-    condition = condition_order,  
-    female = c("Female", "", "", "", "", ""),
-    label = c("", "", "", "", "", "Male")
-  )
-  f_labels3$condition = factor(f_labels3$condition, levels = condition_order)
-
-  f_labels4 <- data.frame(
-    condition = condition_order,  
-    female = c("Female", "", "", "", "", ""),
-    label = c("", "", "", "", "", "Female")
-  )
-  f_labels4$condition = factor(f_labels4$condition, levels = condition_order)
-
   data$female <- factor(data$female, levels = c(0, 1), labels = c("Male", "Female"))
 
   graph <- data %>%  
     filter(str_detect(condition, 'diff')) %>% 
     ggplot(
-      aes(x = age_group5, y = measurement, group = female, color = female, linetype = female) # Added linetype aesthetic
+      aes(x = age_group5, y = measurement, group = female, color = female, linetype = female, size=female) # Added linetype aesthetic
     ) + 
     facet_wrap(
       . ~ condition, 
@@ -2807,15 +2804,15 @@ fac_row_agg_gen_dis <- function(
       color= NA
     ) +
     theme_minimal() +
-    geom_line(size = 1.1) +
+  geom_line(aes(size = female)) +  # Apply size mapping based on the 'female' variable
     geom_text(x = "55", y = 0.10, aes(label = label), data = f_labels, size = 9, color = "#050A30") +
     geom_text(x = "40", y = 0.17, aes(label = label), data = f_labels2, size = 9, color = "#8eb67d") +
-    geom_text(x = "72", y = 0.15, aes(label = label), data = f_labels3, size = 9, color = "#050A30") +
-    geom_text(x = "75", y = 0.17, aes(label = label), data = f_labels4, size = 9, color = "#8eb67d") +
 
     scale_fill_manual(values = c("#D3D3D3")) +        
     scale_color_manual(values = c("Male" = "#050A30", "Female" = "#8eb67d")) +  # Color Female lines with #8eb67d
     scale_linetype_manual(values = c("Male" = "longdash", "Female" = "solid")) +  # Line types for Male and Female
+              scale_size_manual(values = c("Male" = 1, "Female" = 2)) +  # Thicker line for Female
+
     forma_theme
   
   return(graph)
@@ -2842,7 +2839,7 @@ fac_row_agg_gen_dis(
       labels=lab_age,
       position="bottom"
       )+ 
-  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '–', '1'), limits = c(0, 1)) +   theme(legend.position = "none")  # Remove the legend
+  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '–', '1'), limits = c(0, 1))  # Remove the legend
 
 ```
 
