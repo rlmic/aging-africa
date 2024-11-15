@@ -28,7 +28,7 @@ knitr::opts_chunk$set(
 ```
 
 
-```{r packages, include=FALSE}
+```{r env, include=FALSE}
 # Load & Install Packages
 pacman::p_load(
   ggtext,
@@ -53,22 +53,20 @@ pacman::p_load(
   ggh4x
 
 )
-```
-
-```{r data, include=FALSE}
-# Define the base path for data files to avoid repeating paths
-
 source("../src/utils/constants.R")
 source("../src/utils/funcs.R")
+```
 
-# Load datasets using helper function
+```{r data_load, include=FALSE}
 data_list <- lapply(files_to_load, load_data)
-
-# Assign datasets to variables for clarity
 names(data_list) <- gsub("\\.dta$", "", names_datas)
 list2env(data_list, envir = .GlobalEnv)
+```
 
-# Add country identifiers and combine datasets
+
+```{r data_trans, include=FALSE}
+# Main pipeline
+
 subsaharan_weighted <- rbind(
   subsaharan_weighted %>% mutate(country = 'ssa'),
   countries_weighted
@@ -78,20 +76,37 @@ subsaharan_nonweighted <- rbind(
   countries_nonweighted
 )
 
-```
 
+proj_pop <- projections %>%
+  select(country, pop_60plus_1990, pop_60plus_2020, pop_60plus_2050) %>%
+  rename(
+    `1990` = pop_60plus_1990,
+    `2020` = pop_60plus_2020,
+    `2050` = pop_60plus_2050
+  ) %>%
+  mutate(across(starts_with("19"), round, 0)) %>%
+  gather(measurement, value, `1990`:`2050`, factor_key = TRUE) %>%
+  filter(country %in% countries) %>%
+  mutate(value = round(value, 1)) %>%
+  mutate(
+    measurement = factor(measurement, levels = breaks_text[-length(breaks_text)], ordered = TRUE)
+  )
 
-
-
-```{r include=FALSE}
-
-
-# Main pipeline
 totpop <- pop_pro %>%
-  select(countryregion, pop_total_1990, pop_total_2020, pop_total_2050, pop_total_2100) %>%
+  select(
+    countryregion, 
+    pop_total_1990, 
+    pop_total_2020, 
+    pop_total_2050, 
+    pop_total_2100
+    ) %>%
   filter(countryregion %in% keepobs) %>%
   add_rest_of_world("pop_total") %>%
-  reshape_and_clean("pop_total", keepobs, order)
+  reshape_and_clean("pop_total", keepobs, order) 
+
+totpop$name_lab <- name_lab
+totpop$measurement_x <- measurement_x
+totpop$lab <- lab
 
 over60 <- pop_pro %>%
   select(countryregion, pop_60plus_1990, pop_60plus_2020, pop_60plus_2050, pop_60plus_2100) %>%
@@ -123,11 +138,25 @@ old_age_rat_ov60 <- old_age_rat_ov60 %>%
 old_age_rat_ov65 <- old_age_rat_ov65 %>%
   mutate(name_lab = if_else(name_lab == 'Sub-Saharan Africa', 'Sub-Saharan Africa\n             Avg.', name_lab))
 
-```
 
-
-
-```{r }
+ssa <- ssa %>%
+  mutate(
+    gen = female,
+    female = as.factor(female),
+    age_group5 = as.factor(age_group5)
+  ) %>%
+  recode_values("female", c(`0` = 'Male', `1` = 'Female')) %>%
+  recode_values("country", country_mapping) %>%
+  mutate(
+    region = ifelse(country %in% names(region_mapping), region_mapping[country], 'Other'),
+    work_hrs = case_when(
+      work_hrs >= 140 & work_hrs <= 168 ~ 140,
+      work_hrs > 168 ~ NA_real_,
+      TRUE ~ work_hrs
+    ),
+    depressed = ifelse(country == 'Nigeria', NA, depressed),
+    gender = as.factor(female)
+  )
 
 # Define the stacked_labels data frame
 stacked_labels <- data.frame(
@@ -137,492 +166,11 @@ stacked_labels <- data.frame(
   measurement = c(2670000, 5300000, 6600000, 8600000),
   color = c("black", "white", "white", "black")
 )
-
-# Plot 1a
-fig1a <- ggplot(totpop, aes(condition, measurement, fill = countryregion, label = countryregion)) +
-  geom_area(type = "ridge", bw = 1) +
-  geom_text(data = stacked_labels, aes(condition, measurement, label = labels), 
-            hjust = 0, vjust = 0.5, color = stacked_labels$color, size = 8) +
-  add_annotation(2100.2, cent(totpop, 1), "· 4.6B", "#818589", size_share) +
-  add_annotation(2100.2, cent(totpop, 2), "· 0.8B", pal[3], size_share) +
-  add_annotation(2100.2, cent(totpop, 3), "· 1.5B", pal[2], size_share) +
-  add_annotation(2100.2, cent(totpop, 4), "· 3.4B", pal[1], size_share) +
-  add_segment(2050, end_val(totpop, 2050)) +
-  geom_point(aes(x = 2050, y = end_val(totpop, 2050)), color = "black") +
-  add_annotation(2050, end_val(totpop, 2050) + 400000, "9.7B", "black", sz_tot) +
-  add_segment(2020, end_val(totpop, 2020)) +
-  geom_point(aes(x = 2020, y = end_val(totpop, 2020)), color = "black") +
-  add_annotation(2020, end_val(totpop, 2020) + 400000, "7.8B", "black", sz_tot) +
-  add_segment(1990, end_val(totpop, 1990)) +
-  geom_point(aes(x = 1990, y = end_val(totpop, 1990)), color = "black") +
-  add_annotation(1990, end_val(totpop, 1990) + 400000, "5.3B", "black", sz_tot) +
-  add_segment(2100, end_val(totpop, 2100)) +
-  geom_point(aes(x = 2100, y = end_val(totpop, 2100)), color = "black") +
-  add_annotation(2100, end_val(totpop, 2100) + 400000, "10.3B", "black", sz_tot) +
-  scale_fill_manual(values = pal) +
-  coord_cartesian(clip = "off") +
-  theme_minimal() +
-  labs(title = '**A.** General Population (Total)', y = "", x = "") +
-  theme(
-    panel.grid = element_blank(),
-    axis.text.y = element_blank(),
-    plot.title = element_markdown(size = 20, color = "#344771", hjust = 0.5),
-    axis.text.x = element_text(size = 20, margin = margin(5, 0, 0, 0)),
-    plot.margin = margin(-1, 20, 0, 2),
-    legend.position = "none"
-  ) +
-  scale_x_continuous(breaks = breaks_numer, labels = breaks_text)
-
-# Plot 1b
-fig1b <- ggplot(over60, aes(condition, measurement, fill = countryregion, label = countryregion)) +
-  geom_area(type = "ridge", bw = 1) +
-  add_annotation(2100.2, cent(over60, 1), "· 1.5B", "#818589", size_share) +
-  add_annotation(2100.2, cent(over60, 2), "· 362M", pal[3], size_share) +
-  add_annotation(2100.2, cent(over60, 3), "· 552M", pal[2], size_share) +
-  add_annotation(2100.2, cent(over60, 4), "· 644M", pal[1], size_share) +
-  add_segment(1990, end_val(over60, 1990)) +
-  geom_point(aes(x = 1990, y = end_val(over60, 1990)), color = "black") +
-  add_annotation(1990, end_val(over60, 1990) + 120000, "483M", "black", sz_tot) +
-  add_segment(2020, end_val(over60, 2020)) +
-  geom_point(aes(x = 2020, y = end_val(over60, 2020)), color = "black") +
-  add_annotation(2020, end_val(over60, 2020) + 120000, "1,061M", "black", sz_tot) +
-  add_segment(2050, end_val(over60, 2050)) +
-  geom_point(aes(x = 2050, y = end_val(over60, 2050)), color = "black") +
-  add_annotation(2050, end_val(over60, 2050) + 120000, "2,132M", "black", sz_tot) +
-  add_segment(2100, end_val(over60, 2100)) +
-  geom_point(aes(x = 2100, y = end_val(over60, 2100)), color = "black") +
-  add_annotation(2100, end_val(over60, 2100) + 120000, "3,084M", "black", sz_tot) +
-  scale_fill_manual(values = pal) +
-  coord_cartesian(clip = "off") +
-  theme_minimal() +
-  labs(title = '**B.** Over 60 Population (Total)', y = "", x = "") +
-  theme(
-    panel.grid = element_blank(),
-    axis.text.y = element_blank(),
-    plot.title = element_markdown(size = 20, color = "#344771", hjust = 0.5),
-    axis.text.x = element_text(size = 20, margin = margin(5, 0, 0, 0)),
-    plot.margin = unit(c(0, 0.75, 0, 0), "inches"),
-    legend.position = "none"
-  ) +
-  scale_x_continuous(breaks = breaks_numer, labels = breaks_text)
-
 ```
 
 
 
 
-
-
-
-```{r}
-library(ggbrace)
-totpop$name_lab = c(
-   NA, NA, NA, NA, '+ 24 %', '+ 60 %','+ 123 %', NA, 
-                    
-                   '- 8 %', '+ 20 %','+ 90 %', NA,
-
-                    
-                   '- 42 %', '- 8 %','+ 63 %', NA
-
-                  
-                                      )
-
-totpop$measurement_x= c(
-  NA, NA, NA, NA,
-  1421243, 1600170, 2776948, NA,
-  1421243, 1600170, 2776948, NA,
-  1421243, 1600170, 2776948, NA)
-
-```
-
-
-
-
-```{r}
-totpop$lab =c(
-   '1.1 B', '0.9 B', '0,5 B', NA,NA, NA, NA, NA, 
-                    
-                   NA, NA, NA, NA,
-
-                    
-                   '0.8 B', '1.5 B','3.4 B', NA
-
-                  
-                                      )
-```
-
-```{r}
-fig1c = ggplot(
-  totpop %>% filter(countryregion != 'Rest of World'), 
-  aes(condition, measurement, fill = countryregion, label = countryregion)
-  ) +
-  geom_line(aes(color = countryregion, size = countryregion, linetype = countryregion)) + 
-  scale_size_manual(values = c(1.4, 1.4, 1.4)) +
-  scale_linetype_manual(values = c("solid", "dashed", "dotted"))+
-  geom_label(
-    data = . %>% mutate(
-      condition = case_when(
-        condition %in% c(1990) ~ NA,
-        condition == 2020 ~ 2005,
-        condition == 2050 ~ 2035,
-        condition == 2100 ~ 2075
-      ),
-      measurement = case_when(
-        name_lab == '+ 63 %' ~ 2776948, 
-        name_lab == '- 8 %' ~ 1600170,
-        name_lab == '- 42 %' ~ 1039655,
-        name_lab == '+ 123 %' ~ 803083.2,
-        name_lab == '+ 60 %' ~ 1133420 - 40000,
-        name_lab == '+ 24 %' ~ 1289317,
-        name_lab == '+ 20 %' ~ 1533439 + 40000,
-        name_lab == '- 8 %' ~ 1068783,
-        name_lab == '+ 90 %' ~ 1753968
-      )
-    ),
-    aes(label = name_lab, colour = countryregion), 
-    fill = 'white', 
-    size = 5,
-    check_overlap = FALSE
-  ) +
-  geom_text_repel(
-    aes(color = countryregion, label = lab),
-    segment.angle = 1,
-    size = 4,
-    vjust = -1,
-    segment.size = .5,
-    segment.alpha = .5,
-    segment.linetype = "dotted",
-    segment.curvature = -0.1
-  ) +
-  coord_cartesian(clip = "off") +
-  theme_minimal() +
-  labs(title = '**C.** General Population (Growth)', y = "", x = "") +
-  geom_point(aes(color = countryregion)) +
-  theme(
-    panel.grid = element_blank(),
-    axis.text.y = element_blank(),
-    plot.title = element_markdown(size = 20, color = "#344771", hjust = 0.5),
-    axis.text.x = element_text(size = 20, margin = margin(5, 0, 0, 0)),
-    plot.margin = unit(c(0, 0.75, 0, 0), "inches"),
-    legend.position = "none",
-    text = element_text(size = 20),
-    panel.grid.major.x = element_line(color = "grey", size = 0.3, linetype = 2)
-  ) +
-  scale_x_continuous(
-    breaks = c(1990, 2020, 2050, 2100), 
-    labels = c("1990", "2020", "2050", "2100")
-  ) +
-  scale_color_manual(values = pal) +
-  scale_y_continuous(
-    breaks = c(0, 500000, 1000000, 1500000, 2000000, 2500000, 3000000, 3500000), 
-    labels = c("0", "-", "1B", "-", "2B", "-", "3B", "-"),
-    limits = c(0, 3500000)
-  ) +
-  # Adding individual curves for each section
-  geom_curve(
-    aes(x = 1990, xend = 2019, y = -5000, yend = 40000),
-    inherit.aes = FALSE, color = "grey", curvature = -0.3
-  ) +
-  geom_curve(
-    aes(x = 2021, xend = 2049, y = -5000, yend = 40000),
-    inherit.aes = FALSE, color = "grey", curvature = -0.3
-  ) +
-  geom_curve(
-    aes(x = 2051, xend = 2100, y = -5000, yend = 40000),
-    inherit.aes = FALSE, color = "grey", curvature = -0.3
-  )
-
-```
-
-
-
-
-
-
-```{r}
-
-fig1d = ggplot(
-  over60 %>% filter(countryregion != 'Rest of World'), 
-  aes(condition, measurement, fill = countryregion, label = countryregion)
-) +
-  geom_line(aes(color = countryregion, size = countryregion, linetype = countryregion)) + 
-  geom_point(aes(color = countryregion)) +
-  scale_size_manual(values = c(1.4, 1.4, 1.4)) +
-  scale_linetype_manual(values = c("solid", "dashed", "dotted"))+
-
-  geom_label(data = . %>% mutate(
-    condition = case_when(
-      condition %in% c(1990) ~ NA,
-      condition == 2020 ~ 2005,
-      condition == 2050 ~ 2035,
-      condition == 2100 ~ 2075
-    ),
-    measurement = case_when(
-      name_lab == '+ 313 %' ~ 400078.6, 
-      name_lab == '+ 59 %' ~ 449769.9 + 20000,
-      name_lab == '- 29 %' ~ 435510.7,
-      name_lab == '+ 194 %' ~ 104476.2,
-      name_lab == '+ 144 %' ~ 244946.5,
-      name_lab == '+ 100 %' ~ 381784.9,
-      name_lab == '+ 121 %' ~ 38513.54,
-      name_lab == '+ 155 %' ~ 99004.16,
-      name_lab == '+ 171 %' ~ 173914.6
-    )
-  ), aes(label = name_lab, colour = countryregion), fill = 'white', size = 5, check_overlap = TRUE) +
-  geom_text_repel(
-    aes(color = countryregion, label = lab),
-    segment.angle = 1,
-    size = 4,
-    vjust = -1,
-    segment.size = 0.5,
-    segment.alpha = 0.5,
-    segment.linetype = "dotted",
-    segment.curvature = -0.1
-  ) +
-  coord_cartesian(clip = "off") +
-  theme_minimal() +
-  labs(title = '**D.** Over 60 Population (Growth)', y = "", x = "") +
-  theme(
-    panel.grid = element_blank(),
-    axis.text.y = element_blank(),
-    plot.title = element_markdown(size = 20, color = "#344771", hjust = 0.5),
-    axis.text.x = element_text(size = 20, margin = margin(5, 0, 0, 0)),
-    text = element_text(size = 20),
-    plot.margin = unit(c(0, 0.75, 0, 0), "inches"),
-    legend.position = "none",
-    panel.grid.major.x = element_line(color = "grey", size = 0.3, linetype = 2)
-  ) +
-  scale_x_continuous(
-    breaks = c(1990, 2020, 2050, 2100), 
-    labels = c("1990", "2020", "2050", "2100")
-  ) +
-  # Separate geom_curve() layers for each curve segment
-  geom_curve(aes(x = 1990, y = -5000, xend = 2019, yend = 4000), inherit.aes = FALSE, curvature = 0.2, color = "grey") +
-  geom_curve(aes(x = 2021, y = -5000, xend = 2049, yend = 4000), inherit.aes = FALSE, curvature = 0.2, color = "grey") +
-  geom_curve(aes(x = 2051, y = -5000, xend = 2100, yend = 4000), inherit.aes = FALSE, curvature = 0.2, color = "grey") +
-  scale_color_manual(values = pal) +   
-  scale_y_continuous(
-    breaks = c(0, 200000, 400000, 600000, 800000), 
-    labels = c("0", "-", "400M", "-", "800M"),
-    limits = c(0, 800000)
-  )
-
-```
-
-
-
-
-```{r}
-depratov60 <- ggplot(
-  dep_rat_ov60, aes(year, ratio, group=countryregion)
-  ) +
-  geom_line(
-    aes(color = countryregion, size=countryregion, linetype = countryregion)
-    ) + 
-    scale_size_manual(values = c(1.4,1.4, 1.4)) +
-  scale_linetype_manual(values = c("dotted", "dashed", "solid"))+
-    theme_minimal() +
-    geom_text_repel(
-    aes(color = countryregion, label = name_lab),
-    segment.angle = 10,
-    size = 7.5,
-    direction = "y",
-    hjust = 0,
-    vjust = 1.7,
-    segment.size = .4,
-    segment.alpha = .5,
-    segment.linetype = "dotted",
-    box.padding = .2,
-    segment.curvature = -0.1
-    ) +
-  geom_text_repel(
-    aes(color = countryregion, label = ratio),
-    segment.angle = 20,
-    size = 6,
-    direction = "y",
-    hjust = 0,
-    vjust = -1.8,
-    segment.size = 1.1,
-    segment.alpha = .5,
-    segment.linetype = "dotted",
-    box.padding = .4,
-    segment.curvature = -0.1
-    ) +
-   scale_color_manual(
-    values = colors_scheme  ) +  
-    coord_cartesian(
-    clip = "off",
-  ) +    
-  theme_minimal() +
-  labs(x="", y="", title='**E.-** General Population (Dependency Ratio)')+
-   theme(
-     panel.grid.minor  = element_blank(),
-     panel.grid.major  = element_line(linetype = 'dotted'),
-     axis.text.y=element_blank(),
-     axis.title = element_markdown(margin = margin(l = 20, b=20), size=24, face='bold', vjust = +3, color="#344771"),
-     text = element_text( size=20, color="#344771"),
-     plot.title = element_markdown(size=20, color="#344771", hjust = 0.5),
-     axis.text = element_markdown( size=20,margin = margin(5,0,0,0)),
-     plot.background = element_blank(),
-     panel.background = element_blank(),
-     plot.margin = margin(1,20,0, 0),
-     legend.position = "none",
-     axis.line.x = element_line(size = 0.5, colour = "#344771", linetype=1)
-     ) +
-  scale_x_continuous(breaks=breaks_numer,labels = breaks_text) +
-  scale_y_continuous(limits = c(0, 1.5), breaks = seq(0, 1.50, 0.25), labels = c("0", "", "0.5", "", "1", "", "1.50"), expand = c(0, 0))
-
-oldageratov60 = ggplot(old_age_rat_ov60, aes(year, ratio, group=countryregion)) +
-  theme(legend.position = "none") +
-  geom_line(
-    aes(color = countryregion, size=countryregion, linetype = countryregion)
-    ) + 
-    scale_size_manual(values = c(1.4,1.4, 1.4)) +
-  scale_linetype_manual(values = c("dotted", "dashed", "solid"))+
-
-  scale_color_manual(
-    values = colors_scheme
-    ) +  
-  coord_cartesian(
-    clip = "off"
-    ) +
-  geom_text_repel(
-    aes(color = countryregion, label = ratio),
-    segment.size = 1.1,
-    
-    segment.angle = 20,
-    size = 6,
-    direction = "y",
-    hjust = 0,
-    vjust = -1.98,
-    segment.alpha = .5,
-    segment.linetype = "dotted",
-    box.padding = .4,
-    segment.curvature = -0.1
-    ) +
-  labs(x="", y="", title='**F.-** Over 60 Population (Dependency Ratio)')+
-    theme_minimal() +
-
-  theme(
-    panel.grid.minor = element_blank(),
-    panel.grid.major = element_line(linetype = 'dotted'),
-    axis.text.y = element_blank(),
-    text = element_text( size=20, color="#344771"),
-    plot.title = element_markdown(size=20,     color="#344771", hjust = 0.5),
-    axis.text.x = element_markdown( size=20,margin = margin(5,0,0,0)),
-    strip.background=element_blank(),
-    panel.background = element_blank(),
-    plot.background = element_blank(),
-    plot.margin = margin(0,20,0,2),
-    axis.line.x = element_line(size = 0.5, colour = "#344771", linetype=1),
-    legend.position = "none",
-  ) +   
-  scale_x_continuous(breaks=breaks_numer,labels = breaks_text)+
-    scale_y_continuous(limits = c(0, 1.5), breaks = seq(0, 1.50, 0.25), labels = c("0", "-", "0.5", "-", "1", "1.25", "1.50")) 
-depratov65 <- ggplot(
-  dep_rat_ov65, aes(year, ratio, group=countryregion)
-  ) +
-  geom_line(
-    aes(color = countryregion, size=countryregion)
-    ) + 
-    scale_size_manual(values = c(0.9,0.9, 1.6)) +
-    theme_minimal() +
-    geom_text_repel(
-    aes(color = countryregion, label = name_lab),
-    segment.angle = 10,
-    size = 7.5,
-    direction = "y",
-    hjust = 0,
-    vjust = 1.7,
-    segment.size = .4,
-    segment.alpha = .5,
-    segment.linetype = "dotted",
-    box.padding = .2,
-    segment.curvature = -0.1
-    ) +
-  geom_text_repel(
-    aes(color = countryregion, label = ratio),
-    segment.angle = 20,
-    size = 6,
-    direction = "y",
-    hjust = 0,
-    vjust = -1.8,
-    segment.size = 1.1,
-    segment.alpha = .5,
-    segment.linetype = "dotted",
-    box.padding = .4,
-    segment.curvature = -0.1
-    ) +
-   scale_color_manual(
-    values = colors_scheme  ) +  
-    coord_cartesian(
-    clip = "off",
-  ) +    
-  theme_minimal() +
-  labs(x="", y="", title='**A.-** General Population (Dependency Ratio)')+
-   theme(
-     panel.grid.minor  = element_blank(),
-     panel.grid.major  = element_line(linetype = 'dotted'),
-     axis.text.y=element_blank(),
-     axis.title = element_markdown(margin = margin(l = 20, b=20), size=24, face='bold', vjust = +3, color="#344771"),
-     text = element_text( size=20, color="#344771"),
-     plot.title = element_markdown(size=20, color="#344771", hjust = 0.5),
-     axis.text = element_markdown( size=20,margin = margin(5,0,0,0)),
-     plot.background = element_blank(),
-     panel.background = element_blank(),
-     plot.margin = margin(1,20,0, 0),
-     legend.position = "none",
-     axis.line.x = element_line(size = 0.5, colour = "#344771", linetype=1)
-     ) +
-  scale_x_continuous(breaks=breaks_numer,labels = breaks_text) +
-  scale_y_continuous(limits = c(0, 1.5), breaks = seq(0, 1.50, 0.25), labels = c("0", "", "0.5", "", "1", "", "1.50"), expand = c(0, 0))
-
-oldageratov65 = ggplot(old_age_rat_ov65, aes(year, ratio, group=countryregion)) +
-  theme(legend.position = "none") +
-  geom_line(
-    aes(color = countryregion, size=countryregion)
-    ) + 
-    scale_size_manual(values = c(0.9,0.9, 1.6)) +
-  scale_color_manual(
-    values = colors_scheme
-    ) +  
-  coord_cartesian(
-    clip = "off"
-    ) +
-  geom_text_repel(
-    aes(color = countryregion, label = ratio),
-    segment.size = 1.1,
-    
-    segment.angle = 20,
-    size = 6,
-    direction = "y",
-    hjust = 0,
-    vjust = -1.98,
-    segment.alpha = .5,
-    segment.linetype = "dotted",
-    box.padding = .4,
-    segment.curvature = -0.1
-    ) +
-  labs(x="", y="", title='**B.-** Over 65 Population (Dependency Ratio)')+
-    theme_minimal() +
-
-  theme(
-    panel.grid.minor = element_blank(),
-    panel.grid.major = element_line(linetype = 'dotted'),
-    axis.text.y = element_blank(),
-    text = element_text( size=20, color="#344771"),
-    plot.title = element_markdown(size=20,     color="#344771", hjust = 0.5),
-    axis.text.x = element_markdown( size=20,margin = margin(5,0,0,0)),
-    strip.background=element_blank(),
-    panel.background = element_blank(),
-    plot.background = element_blank(),
-    plot.margin = margin(0,20,0,2),
-    axis.line.x = element_line(size = 0.5, colour = "#344771", linetype=1),
-    legend.position = "none",
-  ) +   
-  scale_x_continuous(breaks=breaks_numer,labels = breaks_text)+
-    scale_y_continuous(limits = c(0, 1.5), breaks = seq(0, 1.50, 0.25), labels = c("0", "-", "0.5", "-", "1", "1.25", "1.50")) 
-```
 
 ```{r functions, include=FALSE}
 trans_input_gende <- function(
@@ -699,7 +247,7 @@ trans_input_count <- function(
         country == 'niger'
          ~ 'Niger',
         country == 'ssa'
-         ~ '**Average**',
+         ~ 'Average',
         TRUE ~ NA)
     )
   return (data)
@@ -917,7 +465,7 @@ get_count <- function(
   ssa0 <- ssa
   ssa0
   ssa0$country = ''
-  ssa0$region = "**Average**"
+  ssa0$region = "Average"
   ssa <- bind_rows(ssa0, ssa)
   annot0 = ssa %>% 
   filter(
@@ -954,7 +502,7 @@ fac_row_popu <- function(
   dat
   subsah <- ssa
   subsah$country <- ''
-  subsah$region <-  "**Average**"
+  subsah$region <-  "Average"
   ssa <- bind_rows(ssa, subsah)
   ssa = ssa %>% filter(!age_group5  %in% c('0', '5', '10', '15'))
   graph <- ssa %>%
@@ -1023,7 +571,7 @@ fac_row__<- function(
     ssa_agg = ssa_agg %>% filter(!age_group5  %in% c('0', '5', '10', '15'))
 
     ssa_agg$country = ''
-    ssa_agg$region =  "**Average**"
+    ssa_agg$region =  "Average"
     
     data=bind_rows(data,ssa_agg)
     
@@ -1064,7 +612,7 @@ fac_row__<- function(
     ssa_agg_non$age_group5 <- as.factor(ssa_agg_non$age_group5)
     
     ssa_agg_non$country = ''
-    ssa_agg_non$region =  "**Average**"
+    ssa_agg_non$region =  "Average"
     ssa_agg_non = ssa_agg_non %>% filter(!age_group5  %in% c('0', '5', '10', '15'))
 
     data=bind_rows(data,ssa_agg_non)
@@ -1145,7 +693,7 @@ fac_row <- function(
     ssa_agg = ssa_agg %>% filter(!age_group5  %in% c('0', '5', '10', '15'))
 
     ssa_agg$country = ''
-    ssa_agg$region =  "**Average**"
+    ssa_agg$region =  "Average"
     
     data=bind_rows(data,ssa_agg)
     
@@ -1186,7 +734,7 @@ fac_row <- function(
     ssa_agg_non$age_group5 <- as.factor(ssa_agg_non$age_group5)
     
     ssa_agg_non$country = ''
-    ssa_agg_non$region =  "**Average**"
+    ssa_agg_non$region =  "Average"
     ssa_agg_non = ssa_agg_non %>% filter(!age_group5  %in% c('0', '5', '10', '15'))
 
     data=bind_rows(data,ssa_agg_non)
@@ -1243,9 +791,9 @@ fac_row_agg_count_out <- function(
 
   graph <-data %>%  
     filter(condition!='healthinsurance_ever') %>% 
-    mutate(label = ifelse(country== "**Average**", country, NA)) %>%
+    mutate(label = ifelse(country== "Average", country, NA)) %>%
     ggplot(
-      aes(x = age_group5, y = measurement, colour = I(ifelse(country ==  "**Average**", "#050A30", "#D3D3D3")), group=country)
+      aes(x = age_group5, y = measurement, colour = I(ifelse(country ==  "Average", "#050A30", "#D3D3D3")), group=country)
       ) +
     facet_wrap(
       . ~condition, 
@@ -1265,7 +813,7 @@ fac_row_agg_count_out <- function(
     theme_minimal() +
     #geom_line(size = 1) +
     geom_line(size=1.1) +
-    geom_line(data = filter(data, (country ==  "**Average**" & condition!='healthinsurance_ever')), size = 2, linetype="dotdash")+#, linetype="dashed")+
+    geom_line(data = filter(data, (country ==  "Average" & condition!='healthinsurance_ever')), size = 2, linetype="dotdash")+#, linetype="dashed")+
   geom_text(x = "40", y = 0.25, aes(label = label), data = f_labels, size=9, color="#050A30")+
 
     scale_fill_manual(values = c("#D3D3D3")) +
@@ -1298,9 +846,9 @@ fac_row_agg_count_dis <- function(
 
   graph <-data %>%  
     filter(str_detect(condition, 'diff')) %>% 
-    mutate(label = ifelse(country==  "**Average**", country, NA)) %>%
+    mutate(label = ifelse(country==  "Average", country, NA)) %>%
     ggplot(
-      aes(x = age_group5, y = measurement, colour = I(ifelse(country ==  "**Average**", "#050A30", "#D3D3D3")), group=country)
+      aes(x = age_group5, y = measurement, colour = I(ifelse(country ==  "Average", "#050A30", "#D3D3D3")), group=country)
       ) + 
     facet_wrap(
       . ~condition, 
@@ -1316,7 +864,7 @@ fac_row_agg_count_dis <- function(
         ) +
     theme_minimal() +
     geom_line(size=1.1) +
-    geom_line(data = filter(data, (country ==  "**Average**" & str_detect(condition, 'diff'))), size = 2, linetype="dotdash")+
+    geom_line(data = filter(data, (country ==  "Average" & str_detect(condition, 'diff'))), size = 2, linetype="dotdash")+
   geom_text(x = "40", y = 0.15, aes(label = label), data = f_labels, size=9, color="#050A30")+
 
     scale_fill_manual(values = c("#D3D3D3")) +
@@ -1470,12 +1018,7 @@ graph_agg_data_main <- function(weighted = TRUE, breaks = bre_age, labels = lab_
     label_colour = "#14213D"
   )
 }
-```
 
-
-
-
-```{r}
 main_outco <- function(
   vars,
   labs,
@@ -1528,143 +1071,9 @@ main_outco <- function(
 ```
 
 
+```{r include=FALSE}
 
-```{r data_trans, include=FALSE}
-outcomes_weighted_country = trans_input_count(
-  subsaharan_weighted, measures
-  ) 
-
-outcomes_nonweighted_country = trans_input_count(
-  subsaharan_nonweighted, measures
-  ) 
-
-outcomes_weighted_country_lim = trans_input_count(
-  subsaharan_weighted, limitations
-  )  
-
-
-outcomes_nonweighted_country_lim = trans_input_count(
-  subsaharan_nonweighted, limitations
-  ) 
-```
-
-```{r}
-
-disabili_weighted_gender = trans_input_gende(
-  ssa_agg, limitations
-  )  
-disabili_nonweight_gender = trans_input_gende(
-  ssa_agg_non, limitations
-  ) 
-ssa$gen <- ssa$female
-ssa$female <- as.factor(ssa$female)
-
-ssa$age_group5 <- as.factor(ssa$age_group5)
-
-ssa = ssa %>% 
-    mutate(
-      female = case_when(
-      female==0
-       ~ 'Male',
-      female ==1
-      ~ 'Female',
-      TRUE ~ NA), 
-      country = case_when(
-        country == 'eth'
-         ~ 'Ethiopia',
-        country == 'mlw'
-         ~ 'Malawi',  
-        country == 'nga'
-         ~ 'Nigeria',  
-        country == 'tza'
-         ~ 'Tanzania',  
-        country == 'gha'
-         ~ 'Ghana', 
-        country == 'saf'
-        ~ 'South Africa',
-        country == 'uga'
-         ~ 'Uganda',
-        country == 'niger'
-         ~ 'Niger',
-        TRUE ~ NA),
-      work_hrs = case_when(
-        work_hrs>=140 & work_hrs<=168 ~ 140,
-        work_hrs>168 ~ NA,
-        TRUE ~ work_hrs
-        ),
-      region = case_when(
-        country %in% c('Ethiopia', 'Tanzania', 'Uganda')
-         ~ '**1.-** Eastern Africa<br>',  
-        country  %in% c('Ghana', 'Nigeria', 'Niger')
-         ~ '**3.-** Western Africa<br>',
-        TRUE ~ '**2.-** Southern Africa<br>'
-      ),
-      depressed = case_when(
-        country=='Nigeria'
-         ~ NA,
-        TRUE ~ depressed
-      ))
-ssa$gender <- as.factor(ssa$female)
-```
-
-```{r}
-projections['1990'] =projections$pop_60plus_1990
-projections['2020'] =projections$pop_60plus_2020
-projections['2050'] =projections$pop_60plus_2050
-
-proj_pop = projections %>% select(
-  country, 
-  '1990',
-  '2020', 
-  '2050'
-)
-
-proj_pop = rapply(
-  object = proj_pop,
-  f = round,
-  classes = "numeric",
-  how = "replace",
-  digits = 0
-  ) 
-
-proj_pop = gather(
-  proj_pop,
-  measurement,
-  value,
-  '1990':'2050',
-  factor_key=TRUE
-  )
-
-proj_pop = proj_pop %>% 
-  filter(
-    country %in% countries
-    )
-
-proj_pop = proj_pop %>% mutate(
-  value=value
-) %>%  mutate(across(c('value'), round, 1))
-
-proj_pop = proj_pop %>% mutate(
-  measurement = factor(measurement, levels = breaks_text[-length(breaks_text)], ordered = TRUE)
-)
-
-```
-
-
-
-```{r}
-
-dat = dat %>% select(
-  'country', 
-  'physicians', 
-  'hospbeds', 
-  'govtexpgdp', 
-  'oopexp', 
-  'pensioncoverage',
-  'socexpnohealth',
-  "lifeexpsixtytotal",
-  'uhcidx'
-  )
+dat = dat %>% select(head(var_sum, -1))
 
 dat <- dat[order(dat$govtexpgdp, decreasing=TRUE),]
 
@@ -1768,6 +1177,401 @@ sub_sahar_inco = gather(
 ```
 
 
+```{r eval=FALSE, include=FALSE}
+# General filtering and reshaping into long format for selected variables
+to_long_format <- function(df, vars, order_map) {
+  df %>%
+    select(any_of(vars)) %>%  # Filter for specified numeric columns only
+    select(where(is.numeric)) %>%  # Further filter to keep only numeric columns
+    pivot_longer(cols = everything(), names_to = "variable", values_to = "value") %>%
+    mutate(order = case_when(
+      country %in% names(order_map) ~ order_map[country],
+      TRUE ~ NA_integer_
+    )) %>%
+    arrange(variable, order)
+}
+
+
+# Define ordering for countries and variables to pivot
+country_order <- c(
+  'South Africa' = 1, 'Ghana' = 2, 'Nigeria' = 3,
+  'Tanzania' = 4, 'Ethiopia' = 5, 'Uganda' = 6,
+  'Malawi' = 7, 'Niger' = 8
+)
+
+# Apply initial transformations on `dat`
+dat <- dat %>%
+  arrange(desc(govtexpgdp)) %>%
+  mutate(
+    cou = ifelse(country %in% countries, 1, 0),
+    oopexp = 100 - oopexp
+  )
+
+# Apply the transformation and reshaping
+dat_long <- to_long_format(dat, head(var_sum, -1), country_order)
+
+# Additional transformations for income groups
+income_group_filter <- function(df, pattern) {
+  df %>%
+    filter(str_detect(country, pattern)) %>%
+    select(-cou) %>%
+    pivot_longer(cols = physicians:uhcidx, names_to = "variable", values_to = "value")
+}
+
+# Filter data based on income groups
+high_inco <- income_group_filter(dat, "HIC")
+low_middle_inco <- income_group_filter(dat, "LMICs_nonSSA")
+sub_sahar_inco <- income_group_filter(dat, "Sub-Saharan Africa")
+
+# Remaining dataset transformations
+dat <- dat %>%
+  arrange(desc(govtexpgdp)) %>%
+  mutate(
+    cou = ifelse(country %in% countries, 1, 0),
+    oopexp = 100 - oopexp
+  )
+
+# Split data based on cou and reshape each subset
+dat_1 <- to_long_format(filter(dat, cou != 0), var_sum, country_order)
+dat_0 <- to_long_format(filter(dat, cou == 0), var_sum, NULL)
+
+
+```
+
+
+
+```{r include=FALSE}
+outcomes_weighted_country = trans_input_count(
+  subsaharan_weighted, measures
+  ) 
+
+outcomes_nonweighted_country = trans_input_count(
+  subsaharan_nonweighted, measures
+  ) 
+
+outcomes_weighted_country_lim = trans_input_count(
+  subsaharan_weighted, limitations
+  )  
+
+
+outcomes_nonweighted_country_lim = trans_input_count(
+  subsaharan_nonweighted, limitations
+  ) 
+```
+
+```{r}
+
+disabili_weighted_gender = trans_input_gende(
+  ssa_agg, limitations
+  )  
+disabili_nonweight_gender = trans_input_gende(
+  ssa_agg_non, limitations
+  ) 
+```
+
+
+```{r }
+
+# Plot 2a
+fig2a <- ggplot(totpop, aes(condition, measurement, fill = countryregion, label = countryregion)) +
+  geom_area(type = "ridge", bw = 1) +
+  geom_text(data = stacked_labels, aes(condition, measurement, label = labels), 
+            hjust = 0, vjust = 0.5, color = stacked_labels$color, size = 8) +
+  add_annotation(2100.2, cent(totpop, 1), "· 4.6B", "#818589", size_share) +
+  add_annotation(2100.2, cent(totpop, 2), "· 0.8B", pal[3], size_share) +
+  add_annotation(2100.2, cent(totpop, 3), "· 1.5B", pal[2], size_share) +
+  add_annotation(2100.2, cent(totpop, 4), "· 3.4B", pal[1], size_share) +
+  add_segment(2050, end_val(totpop, 2050)) +
+  geom_point(aes(x = 2050, y = end_val(totpop, 2050)), color = "black") +
+  add_annotation(2050, end_val(totpop, 2050) + 400000, "9.7B", "black", sz_tot) +
+  add_segment(2020, end_val(totpop, 2020)) +
+  geom_point(aes(x = 2020, y = end_val(totpop, 2020)), color = "black") +
+  add_annotation(2020, end_val(totpop, 2020) + 400000, "7.8B", "black", sz_tot) +
+  add_segment(1990, end_val(totpop, 1990)) +
+  geom_point(aes(x = 1990, y = end_val(totpop, 1990)), color = "black") +
+  add_annotation(1990, end_val(totpop, 1990) + 400000, "5.3B", "black", sz_tot) +
+  add_segment(2100, end_val(totpop, 2100)) +
+  geom_point(aes(x = 2100, y = end_val(totpop, 2100)), color = "black") +
+  add_annotation(2100, end_val(totpop, 2100) + 400000, "10.3B", "black", sz_tot) +
+  scale_fill_manual(values = pal) +
+  coord_cartesian(clip = "off") +
+  theme_minimal() +
+  labs(title = '**A.** General Population (Total)', y = "", x = "") +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.y = element_blank(),
+    plot.title = element_markdown(size = 20, color = "#344771", hjust = 0.5),
+    axis.text.x = element_text(size = 20, margin = margin(5, 0, 0, 0)),
+    plot.margin = margin(-1, 20, 0, 2),
+    legend.position = "none"
+  ) +
+  scale_x_continuous(breaks = breaks_numer, labels = breaks_text)
+
+# Plot 2b
+fig2b <- ggplot(over60, aes(condition, measurement, fill = countryregion, label = countryregion)) +
+  geom_area(type = "ridge", bw = 1) +
+  add_annotation(2100.2, cent(over60, 1), "· 1.5B", "#818589", size_share) +
+  add_annotation(2100.2, cent(over60, 2), "· 362M", pal[3], size_share) +
+  add_annotation(2100.2, cent(over60, 3), "· 552M", pal[2], size_share) +
+  add_annotation(2100.2, cent(over60, 4), "· 644M", pal[1], size_share) +
+  add_segment(1990, end_val(over60, 1990)) +
+  geom_point(aes(x = 1990, y = end_val(over60, 1990)), color = "black") +
+  add_annotation(1990, end_val(over60, 1990) + 120000, "483M", "black", sz_tot) +
+  add_segment(2020, end_val(over60, 2020)) +
+  geom_point(aes(x = 2020, y = end_val(over60, 2020)), color = "black") +
+  add_annotation(2020, end_val(over60, 2020) + 120000, "1,061M", "black", sz_tot) +
+  add_segment(2050, end_val(over60, 2050)) +
+  geom_point(aes(x = 2050, y = end_val(over60, 2050)), color = "black") +
+  add_annotation(2050, end_val(over60, 2050) + 120000, "2,132M", "black", sz_tot) +
+  add_segment(2100, end_val(over60, 2100)) +
+  geom_point(aes(x = 2100, y = end_val(over60, 2100)), color = "black") +
+  add_annotation(2100, end_val(over60, 2100) + 120000, "3,084M", "black", sz_tot) +
+  scale_fill_manual(values = pal) +
+  coord_cartesian(clip = "off") +
+  theme_minimal() +
+  labs(title = '**B.** Over 60 Population (Total)', y = "", x = "") +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.y = element_blank(),
+    plot.title = element_markdown(size = 20, color = "#344771", hjust = 0.5),
+    axis.text.x = element_text(size = 20, margin = margin(5, 0, 0, 0)),
+    plot.margin = unit(c(0, 0.75, 0, 0), "inches"),
+    legend.position = "none"
+  ) +
+  scale_x_continuous(breaks = breaks_numer, labels = breaks_text)
+
+# Plot 2c
+
+fig2c <- create_plot(
+  totpop, 
+  title = '**C.** General Population (Growth)', 
+  y_limits = c(0, 500000, 1000000, 1500000, 2000000, 2500000, 3000000, 3500000), 
+  y_labels = c("0", "-", "1B", "-", "2B", "-", "3B", "-")
+)
+
+# Plot 2d
+
+fig2d <- create_plot(
+  over60, 
+  title = '**D.** Over 60 Population (Growth)', 
+  y_limits = c(0, 200000, 400000, 600000, 800000), 
+  y_labels = c("0", "-", "400M", "-", "800M")
+)
+
+depratov60 <- ggplot(
+  dep_rat_ov60, aes(year, ratio, group=countryregion)
+  ) +
+  geom_line(
+    aes(color = countryregion, size=countryregion, linetype = countryregion)
+    ) + 
+    scale_size_manual(values = c(1.4,1.4, 1.4)) +
+  scale_linetype_manual(values = c("dotted", "dashed", "solid"))+
+    theme_minimal() +
+    geom_text_repel(
+    aes(color = countryregion, label = name_lab),
+    segment.angle = 10,
+    size = 7.5,
+    direction = "y",
+    hjust = 0,
+    vjust = 1.7,
+    segment.size = .4,
+    segment.alpha = .5,
+    segment.linetype = "dotted",
+    box.padding = .2,
+    segment.curvature = -0.1
+    ) +
+  geom_text_repel(
+    aes(color = countryregion, label = ratio),
+    segment.angle = 20,
+    size = 6,
+    direction = "y",
+    hjust = 0,
+    vjust = -1.8,
+    segment.size = 1.1,
+    segment.alpha = .5,
+    segment.linetype = "dotted",
+    box.padding = .4,
+    segment.curvature = -0.1
+    ) +
+   scale_color_manual(
+    values = colors_scheme  ) +  
+    coord_cartesian(
+    clip = "off",
+  ) +    
+  theme_minimal() +
+  labs(x="", y="", title='**E.-** General Population (Dependency Ratio)')+
+   theme(
+     panel.grid.minor  = element_blank(),
+     panel.grid.major  = element_line(linetype = 'dotted'),
+     axis.text.y=element_blank(),
+     axis.title = element_markdown(margin = margin(l = 20, b=20), size=24, face='bold', vjust = +3, color="#344771"),
+     text = element_text( size=20, color="#344771"),
+     plot.title = element_markdown(size=20, color="#344771", hjust = 0.5),
+     axis.text = element_markdown( size=20,margin = margin(5,0,0,0)),
+     plot.background = element_blank(),
+     panel.background = element_blank(),
+     plot.margin = margin(1,20,0, 0),
+     legend.position = "none",
+     axis.line.x = element_line(size = 0.5, colour = "#344771", linetype=1)
+     ) +
+  scale_x_continuous(breaks=breaks_numer,labels = breaks_text) +
+  scale_y_continuous(limits = c(0, 1.5), breaks = seq(0, 1.50, 0.25), labels = c("0", "", "0.5", "", "1", "", "1.50"), expand = c(0, 0))
+
+oldageratov60 = ggplot(old_age_rat_ov60, aes(year, ratio, group=countryregion)) +
+  theme(legend.position = "none") +
+  geom_line(
+    aes(color = countryregion, size=countryregion, linetype = countryregion)
+    ) + 
+    scale_size_manual(values = c(1.4,1.4, 1.4)) +
+  scale_linetype_manual(values = c("dotted", "dashed", "solid"))+
+
+  scale_color_manual(
+    values = colors_scheme
+    ) +  
+  coord_cartesian(
+    clip = "off"
+    ) +
+  geom_text_repel(
+    aes(color = countryregion, label = ratio),
+    segment.size = 1.1,
+    
+    segment.angle = 20,
+    size = 6,
+    direction = "y",
+    hjust = 0,
+    vjust = -1.98,
+    segment.alpha = .5,
+    segment.linetype = "dotted",
+    box.padding = .4,
+    segment.curvature = -0.1
+    ) +
+  labs(x="", y="", title='**F.-** Over 60 Population (Dependency Ratio)')+
+    theme_minimal() +
+
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(linetype = 'dotted'),
+    axis.text.y = element_blank(),
+    text = element_text( size=20, color="#344771"),
+    plot.title = element_markdown(size=20,     color="#344771", hjust = 0.5),
+    axis.text.x = element_markdown( size=20,margin = margin(5,0,0,0)),
+    strip.background=element_blank(),
+    panel.background = element_blank(),
+    plot.background = element_blank(),
+    plot.margin = margin(0,20,0,2),
+    axis.line.x = element_line(size = 0.5, colour = "#344771", linetype=1),
+    legend.position = "none",
+  ) +   
+  scale_x_continuous(breaks=breaks_numer,labels = breaks_text)+
+    scale_y_continuous(limits = c(0, 1.5), breaks = seq(0, 1.50, 0.25), labels = c("0", "-", "0.5", "-", "1", "1.25", "1.50")) 
+depratov65 <- ggplot(
+  dep_rat_ov65, aes(year, ratio, group=countryregion)
+  ) +
+  geom_line(
+    aes(color = countryregion, size=countryregion)
+    ) + 
+    scale_size_manual(values = c(0.9,0.9, 1.6)) +
+    theme_minimal() +
+    geom_text_repel(
+    aes(color = countryregion, label = name_lab),
+    segment.angle = 10,
+    size = 7.5,
+    direction = "y",
+    hjust = 0,
+    vjust = 1.7,
+    segment.size = .4,
+    segment.alpha = .5,
+    segment.linetype = "dotted",
+    box.padding = .2,
+    segment.curvature = -0.1
+    ) +
+  geom_text_repel(
+    aes(color = countryregion, label = ratio),
+    segment.angle = 20,
+    size = 6,
+    direction = "y",
+    hjust = 0,
+    vjust = -1.8,
+    segment.size = 1.1,
+    segment.alpha = .5,
+    segment.linetype = "dotted",
+    box.padding = .4,
+    segment.curvature = -0.1
+    ) +
+   scale_color_manual(
+    values = colors_scheme  ) +  
+    coord_cartesian(
+    clip = "off",
+  ) +    
+  theme_minimal() +
+  labs(x="", y="", title='**A.-** General Population (Dependency Ratio)')+
+   theme(
+     panel.grid.minor  = element_blank(),
+     panel.grid.major  = element_line(linetype = 'dotted'),
+     axis.text.y=element_blank(),
+     axis.title = element_markdown(margin = margin(l = 20, b=20), size=24, face='bold', vjust = +3, color="#344771"),
+     text = element_text( size=20, color="#344771"),
+     plot.title = element_markdown(size=20, color="#344771", hjust = 0.5),
+     axis.text = element_markdown( size=20,margin = margin(5,0,0,0)),
+     plot.background = element_blank(),
+     panel.background = element_blank(),
+     plot.margin = margin(1,20,0, 0),
+     legend.position = "none",
+     axis.line.x = element_line(size = 0.5, colour = "#344771", linetype=1)
+     ) +
+  scale_x_continuous(breaks=breaks_numer,labels = breaks_text) +
+  scale_y_continuous(limits = c(0, 1.5), breaks = seq(0, 1.50, 0.25), labels = c("0", "", "0.5", "", "1", "", "1.50"), expand = c(0, 0))
+
+oldageratov65 = ggplot(old_age_rat_ov65, aes(year, ratio, group=countryregion)) +
+  theme(legend.position = "none") +
+  geom_line(
+    aes(color = countryregion, size=countryregion)
+    ) + 
+    scale_size_manual(values = c(0.9,0.9, 1.6)) +
+  scale_color_manual(
+    values = colors_scheme
+    ) +  
+  coord_cartesian(
+    clip = "off"
+    ) +
+  geom_text_repel(
+    aes(color = countryregion, label = ratio),
+    segment.size = 1.1,
+    
+    segment.angle = 20,
+    size = 6,
+    direction = "y",
+    hjust = 0,
+    vjust = -1.98,
+    segment.alpha = .5,
+    segment.linetype = "dotted",
+    box.padding = .4,
+    segment.curvature = -0.1
+    ) +
+  labs(x="", y="", title='**B.-** Over 65 Population (Dependency Ratio)')+
+    theme_minimal() +
+
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(linetype = 'dotted'),
+    axis.text.y = element_blank(),
+    text = element_text( size=20, color="#344771"),
+    plot.title = element_markdown(size=20,     color="#344771", hjust = 0.5),
+    axis.text.x = element_markdown( size=20,margin = margin(5,0,0,0)),
+    strip.background=element_blank(),
+    panel.background = element_blank(),
+    plot.background = element_blank(),
+    plot.margin = margin(0,20,0,2),
+    axis.line.x = element_line(size = 0.5, colour = "#344771", linetype=1),
+    legend.position = "none",
+  ) +   
+  scale_x_continuous(breaks=breaks_numer,labels = breaks_text)+
+    scale_y_continuous(limits = c(0, 1.5), breaks = seq(0, 1.50, 0.25), labels = c("0", "-", "0.5", "-", "1", "1.25", "1.50")) 
+```
+
+
+
+
 
 ```{r pop_grow, echo=FALSE, fig.height=6, fig.width=5, dev = c("png"), dpi=100}
 # Figure 1: Panel B: Over-60 population (m.)
@@ -1795,19 +1599,19 @@ newggslopegraph(
 
 
 
+
+
 ```{r ov60_pop, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
 # Figure 2: Projected Population Growth and Dependency Ratios
 # Panels A & B
-fig1a | fig1b  
+fig2a | fig2b  
 ```
-
-
 
 
 ```{r ov60_growth, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
 # Figure 2: Projected Population Growth and Dependency Ratios
 # Panels C & D
-fig1c | fig1d
+fig2c | fig2d
 ```
 
 ```{r ov60_dep_rat, eval=FALSE, fig.height=7.5, fig.width=18, dev=c("png"), dpi=100, include=FALSE}
@@ -1934,9 +1738,7 @@ fac_row_agg_count_out_gender_ <- function(
       color= NA
         ) +
     theme_minimal() +
-    #geom_line(size = 1) +
   geom_line(aes(size = female)) +  # Apply size mapping based on the 'female' variable
-    #geom_line(data = filter(data, (country ==  "**Average**" & condition!='healthinsurance_ever')), size = 2)+#, linetype="dashed")+
     geom_text(x = "65", y = 0.25, aes(label = label), data = f_labels, size = 9, color = "#050A30" ) +
     geom_text(x = "65", y = 0.55, aes(label = label), data = f_labels2, size = 9, color = "#8eb67d") +
     scale_fill_manual(values = c("#D3D3D3")) +        
@@ -2133,15 +1935,6 @@ main_outco(
 ```
 
 
-
-
-
-
-# Appendix
-
-\begin{landscape}
-
-
 ```{r ov65_dep_rat, eval=FALSE, fig.height=7.5, fig.width=18, dev=c("png"), dpi=100, include=FALSE}
 
 # Online Appendix Figure A1: Dependency Ratios (over-65)
@@ -2233,8 +2026,9 @@ fac_row__<- function(
     ssa_agg = ssa_agg %>% filter(!age_group5  %in% c('0', '5', '10', '15'))
 
     ssa_agg$country = ''
-    ssa_agg$region =  "**Average**"
-    
+    #ssa_agg$region =  "**Average**"
+    ssa_agg$region =  "Average"
+
     data=bind_rows(data,ssa_agg)
     
   } else {
@@ -2274,7 +2068,9 @@ fac_row__<- function(
     ssa_agg_non$age_group5 <- as.factor(ssa_agg_non$age_group5)
     
     ssa_agg_non$country = ''
-    ssa_agg_non$region =  "**Average**"
+    #ssa_agg_non$region =  "**Average**"
+    ssa_agg_non$region =  "Average"
+
     ssa_agg_non = ssa_agg_non %>% filter(!age_group5  %in% c('0', '5', '10', '15'))
 
     data=bind_rows(data,ssa_agg_non)
@@ -2429,5 +2225,5 @@ plot_grid(b, c, d, e, f, i, ncol=1, align='v', rel_heights = c(7.7, 5, 5.8, 5, 5
 
 ```
 
-\end{landscape}
+
 

@@ -70,10 +70,23 @@ countries = c(
 )
 
 regions = c(
-  "**Average**", 
-  '**1.-** Eastern Africa<br>', 
-  '**2.-** Southern Africa<br>', 
-  '**3.-** Western Africa<br>'
+  "Average", 
+  '1.- Eastern Africa', 
+  '2.- Southern Africa', 
+  '3.- Western Africa'
+)
+
+# Define lookup tables for mappings
+country_mapping <- c(
+  'eth' = 'Ethiopia', 'mlw' = 'Malawi', 'nga' = 'Nigeria',
+  'tza' = 'Tanzania', 'gha' = 'Ghana', 'saf' = 'South Africa',
+  'uga' = 'Uganda', 'niger' = 'Niger'
+)
+
+region_mapping <- c(
+  'Ethiopia' = '1.- Eastern Africa', 'Tanzania' = '1.- Eastern Africa', 'Uganda' = '1.- Eastern Africa',
+  'Ghana' = '3.- Western Africa', 'Nigeria' = '3.- Western Africa', 'Niger' = '3.- Western Africa',
+  'Malawi' = '2.- Southern Africa', 'South Africa' = '2.- Southern Africa'
 )
 
 
@@ -137,7 +150,6 @@ measures = c(
   "urban", 
   "healthinsurance_ever"
 )
-
 
 
 measures_labs_agg <- c(
@@ -217,3 +229,18 @@ var_hea = c(
   'hospbeds', 
   'physicians'
 )
+
+name_lab <- c(
+  NA, NA, NA, NA, '+ 24 %', '+ 60 %', '+ 123 %', NA, 
+  '- 8 %', '+ 20 %', '+ 90 %', NA, '- 42 %', '- 8 %', '+ 63 %', NA
+  )
+
+measurement_x <- c(
+  NA, NA, NA, NA, 1421243, 1600170, 2776948, NA,
+  1421243, 1600170, 2776948, NA, 1421243, 1600170, 2776948, NA
+  )
+
+lab <- c(
+  '1.1 B', '0.9 B', '0.5 B', NA, NA, NA, NA, NA, 
+  NA, NA, NA, NA, '0.8 B', '1.5 B', '3.4 B', NA
+  )
