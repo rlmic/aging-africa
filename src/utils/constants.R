@@ -35,7 +35,7 @@ names_datas <- c(
 order <- c("Sub-Saharan Africa", "India", "China", "Rest of World")
 keepobs = c('World', 'India', 'China', 'Sub-Saharan Africa')
 
-countries <- c("China", "India", "Sub-Saharan Africa")
+coun_comp <- c("China", "India", "Sub-Saharan Africa")
 
 c_green = "#8eb67d"
 colors_scheme = c("#9b111e", "#1f77b4",  c_green)
@@ -89,6 +89,7 @@ region_mapping <- c(
   'Malawi' = '2.- Southern Africa', 'South Africa' = '2.- Southern Africa'
 )
 
+female_map <- list('female' = c('0' = 'Male', '1' = 'Female'))
 
 var_sum = c(
   "govtexpgdp", 
