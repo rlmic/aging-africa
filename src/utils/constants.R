@@ -113,30 +113,30 @@ colo = c(
   "#8eb67d"
 )
 
-labeller_environ <- c( 
-  'lifeexpsixtytotal'="**A.-** Remaining Life<br>Expectancy At age 60<br>(Years)<br>",
-  'socexpnohealth'="**B.-** Social Protection<br> Expenditure on Elderly<br>(Percentage of GDP)<br>",
-  'pensioncoverage'="**C.-** Pension<br>Coverage<br>(Percentage)<br>"
-)
 
-
-var_env <- c(
+indicators <- c(
   'lifeexpsixtytotal',
   'socexpnohealth',
   'pensioncoverage'
 )
 
+
+indicato_labeller <- c( 
+  'lifeexpsixtytotal'="**A.-** Remaining Life<br>Expectancy At age 60<br>(Years)<br>",
+  'socexpnohealth'="**B.-** Social Protection<br> Expenditure on Elderly<br>(Percentage of GDP)<br>",
+  'pensioncoverage'="**C.-** Pension<br>Coverage<br>(Percentage)<br>"
+)
+
 measures_labs <- c(
-  "A) Functional\nLimitations\n(Proportion)",
-  "B) Illness & Injury\n(Proportion)",
-  "C) Stopped Activities\n(Proportion)", 
-  "D) Depression\nOr Psych Distress\n(Proportion)", 
-  "E) Employment\nStatus\n(Proportion)",
-  "F) Weekly\nEmployment Status\n(Hours)",
-  "G) Unmarried \n (Proportion)",
-  "H) Living alone\n(Proportion)", 
-  "I) Urban Status\n(Proportion)",
-  "J) Health\nInsurance\n(Proportion)"
+  "Functional\nLimitations\n(Proportion)", 
+  "Illness\n&\nInjury\n(Proportion)", 
+  "Stopped\nActivities\n(Proportion)", 
+  "Depression\nOr Psych Distress\n(Proportion)",
+  "Employment\nStatus\n(Proportion)",
+  "Weekly\nEmployment Status\n(Hours)", 
+  "Unmarried\n(Proportion)", 
+  "Living alone\n(Proportion)", 
+  "Urban Status\n(Proportion)"
 )
 
 measures = c(
@@ -148,9 +148,8 @@ measures = c(
   "work_hrs",
   "notmarried", 
   "lives_alone", 
-  "urban", 
-  "healthinsurance_ever"
-)
+  "urban"
+  )
 
 
 measures_labs_agg <- c(
@@ -183,6 +182,14 @@ limitations_labs <- c(
   "**F.-** Communicating<br>"
 )
 
+limit_labs  <- c(
+  "          Seeing          ", 
+  "  Hearing", 
+  "        Remembering",
+  "   Walking or \n Climbing",
+  " Self Care",
+  "        Communicating"
+  )
 bre_age = c(
   "20",
   "25",
@@ -198,6 +205,8 @@ bre_age = c(
   "75",
   "80"
 )
+
+colors_gende =  c("Female" = "#8eb67d", "Male" = "#000C66")
 
 lab_age = c(
   "20", 
