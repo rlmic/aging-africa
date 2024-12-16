@@ -528,6 +528,7 @@ fac_row <- function(
       scales = 'free_y',
       space = "free_y"
     ) +
+    
     scale_color_manual(values = colors) +
     force_panelsizes(cols = c(1, rep(0.85, 7))) +
     scale_linetype_manual(values = c("Female" = "solid", "Male" = "longdash")) +
@@ -608,9 +609,12 @@ meas_count_gend <- function(weighted = TRUE, breaks_y = c(0, 0.5, 1), limits_y =
       # Adjust relative heights based on the theme
       if (identical(theme, theme_bottom())) {
         rel_heights <- c(rel_heights, 7.5)  # Slightly bigger for 'theme_bottom'
+      } else if (identical(theme, theme_top())) {
+        rel_heights <- c(rel_heights, 7.3)  # Slightly bigger for 'theme_top'
       } else {
         rel_heights <- c(rel_heights, 5)  # Default height
       }
+      
     }
   } else {
     # If 'pop_row' is included, add it as the first plot
@@ -627,7 +631,7 @@ meas_count_gend <- function(weighted = TRUE, breaks_y = c(0, 0.5, 1), limits_y =
         labels = c('0', '20K', '40K')
       )
     plots <- c(list(a), plots)
-    rel_heights <- c(rel_heights, 9)  # Fixed height for 'pop_row'
+    rel_heights <- c(rel_heights, 8)  # Fixed height for 'pop_row'
     
     # Add the other variables starting from the second plot
     for (i in 1:length(data_cols)) {

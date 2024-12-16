@@ -293,7 +293,6 @@ get_count <- function(
   return(count)
 }
 
-
 fac_row_agg_gen_dis <- function(
   data,
   vars,
@@ -301,57 +300,49 @@ fac_row_agg_gen_dis <- function(
   forma_theme,
   size_count = 10
 ){
-  
   condition.labs <- labels
   names(condition.labs) <- vars
-  condition_order <- c(
-    "diff_seei", 
-    "diff_hear", 
-    "diff_reme", 
-    "diff_walk_clim", 
-    "diff_self_care", 
-    "diff_comm"
-  )
-  
-  data$condition <- factor(data$condition, levels = condition_order)
+  data$condition <- factor(data$condition, levels = vars)
 
   levels(data$age_group5) <- c(levels(data$age_group5), '')
+  
+  # Dynamically generate the number of empty strings based on the length of vars
+  num_conditions <- length(vars)
+  
+  # Adjust the labels dynamically for Male and Female based on num_conditions
   f_labels <- data.frame(
-    condition = condition_order,  
-    female = c("Male", "", "", "", "", ""),
-    label = c("Male", "", "", "", "", "")
+    condition = vars,  
+    female = c(rep("Male", 1), rep("", num_conditions - 1)),
+    label = c("Male", rep("", num_conditions - 1))
   )
-  f_labels$condition = factor(f_labels$condition, levels = condition_order)
+  f_labels$condition = factor(f_labels$condition, levels = vars)
 
   f_labels2 <- data.frame(
-    condition = condition_order,  
-    female = c("Female", "", "", "", "", ""),
-    label = c("Female", "", "", "", "", "")
+    condition = vars,  
+    female = c(rep("Female", 1), rep("", num_conditions - 1)),
+    label = c("Female", rep("", num_conditions - 1))
   )
-  f_labels2$condition = factor(f_labels2$condition, levels = condition_order)
+  f_labels2$condition = factor(f_labels2$condition, levels = vars)
 
   f_labels3 <- data.frame(
-    condition = condition_order,  
-    female = c("", "", "", "", "", "Female"),
-    label = c("", "", "", "", "", "Female")
+    condition = vars,  
+    female = c(rep("", num_conditions - 1), "Female"),
+    label = c(rep("", num_conditions - 1), "Female")
   )
-  f_labels3$condition = factor(f_labels2$condition, levels = condition_order)
+  f_labels3$condition = factor(f_labels3$condition, levels = vars)
 
-  
   f_labels4 <- data.frame(
-    condition = condition_order,  
-    condition = condition_order,  
-    female = c("", "", "", "", "", "Male"),
-    label = c("", "", "", "", "", "Male")
+    condition = vars,  
+    female = c(rep("", num_conditions - 1), "Male"),
+    label = c(rep("", num_conditions - 1), "Male")
   )
-  f_labels4$condition = factor(f_labels2$condition, levels = condition_order)
+  f_labels4$condition = factor(f_labels4$condition, levels = vars)
 
   data$female <- factor(data$female, levels = c(1, 0), labels = c("Female", "Male"))
 
   graph <- data %>%  
-    filter(str_detect(condition, 'diff')) %>% 
     ggplot(
-      aes(x = age_group5, y = measurement, group = female, color = female, linetype = female, size=female) # Added linetype aesthetic
+      aes(x = age_group5, y = measurement, group = female, color = female, linetype = female, size=female)
     ) + 
     facet_wrap(
       . ~ condition, 
@@ -365,105 +356,19 @@ fac_row_agg_gen_dis <- function(
       color= NA
     ) +
     theme_minimal() +
-  geom_line(aes(size = female)) +  # Apply size mapping based on the 'female' variable
+    geom_line(aes(size = female)) +  # Apply size mapping based on the 'female' variable
     geom_text(x = "55", y = 0.10, aes(label = label), data = f_labels, size = 9, color = "#050A30") +
     geom_text(x = "40", y = 0.17, aes(label = label), data = f_labels2, size = 9, color = "#8eb67d") +
-        geom_text(x = "65", y = 0.15, aes(label = label), data = f_labels3, size = 9, color = "#8eb67d") +
+    geom_text(x = "65", y = 0.15, aes(label = label), data = f_labels3, size = 9, color = "#8eb67d") +
     geom_text(x = "75", y = 0.08, aes(label = label), data = f_labels4, size = 9, color = "#050A30") +
-
     scale_fill_manual(values = c("#D3D3D3")) +        
     scale_color_manual(values = c("Male" = "#050A30", "Female" = "#8eb67d")) +  # Color Female lines with #8eb67d
     scale_linetype_manual(values = c("Male" = "longdash", "Female" = "solid")) +  # Line types for Male and Female
-              scale_size_manual(values = c("Male" = 1, "Female" = 2)) +  # Thicker line for Female
-
+    scale_size_manual(values = c("Male" = 1, "Female" = 2)) +  # Thicker line for Female
     forma_theme
   
   return(graph)
 }
-
-fac_row_agg_count_out_gender <- function(
-    data,
-    vars,
-    labels,
-    forma_theme,
-    size_count=10
-){
-
-  condition.labs <- labels
-  names(condition.labs) <- vars
-  condition_order <- measures
-
-  
-  data$condition <- factor(data$condition, levels = condition_order)
-
-  levels(data$age_group5) <- c(levels(data$age_group5), '')
-  f_labels <- data.frame(
-    condition = condition_order,  
-    female = c("Male",  "", "", "", "", "", "", "", ""),
-    label = c("Male", "", "", "", "", "", "", "", "")
-  )
-  f_labels$condition = factor(f_labels$condition, levels = condition_order)
-
-  f_labels2 <- data.frame(
-    condition = condition_order,  
-    female = c("Female",  "", "", "", "", "", "", "", ""),
-    label = c("Female",  "", "", "", "", "", "", "", "")
-  )
-  f_labels2$condition = factor(f_labels2$condition, levels = condition_order)
-
-  f_labels3 <- data.frame(
-    condition = condition_order,  
-    female = c("",  "", "", "", "", "", "", "", "Female"),
-    label = c("",  "", "", "", "", "", "", "", "Female")
-  )
-  f_labels3$condition = factor(f_labels2$condition, levels = condition_order)
-
-  
-  f_labels4 <- data.frame(
-    condition = condition_order,  
-    female = c("",  "", "", "", "", "", "", "", "Male"),
-    label = c("",  "", "", "", "", "", "", "", "Male")
-  )
-  f_labels4$condition = factor(f_labels2$condition, levels = condition_order)
-
-  data$female <- factor(data$female, levels = c(1, 0), labels = c("Female", "Male"))
-  
-  graph <-data %>%  
-    ggplot(
-    aes(x = age_group5, y = measurement, group = female, color = female, linetype = female, size = female)
-      ) +
-    facet_wrap(
-      . ~condition, 
-      ncol = 3, 
-      labeller = labeller(condition=condition.labs)
-      ) +
-    geom_rect(
-      aes(xmin = "60", xmax = "80", ymin = -Inf, ymax = Inf),
-      alpha = 0.004,
-      fill = "#344771",
-      color= NA
-        ) +
-    theme_minimal() +
-  geom_line(aes(size = female)) +  # Apply size mapping based on the 'female' variable
-    geom_text(x = "65", y = 0.25, aes(label = label), data = f_labels, size = 9, color = "#050A30" ) +
-    geom_text(x = "65", y = 0.55, aes(label = label), data = f_labels2, size = 9, color = "#8eb67d") +
-    geom_text(x = "65", y = 0.35, aes(label = label), data = f_labels3, size = 9, color = "#8eb67d") +
-    geom_text(x = "75", y = 0.22, aes(label = label), data = f_labels4, size = 9, color = "#050A30") +
-
-        scale_fill_manual(values = c("#D3D3D3")) +        
-    scale_color_manual(values = c("Male" = "#050A30", "Female" = "#8eb67d")) +  # Color Female lines with #8eb67d
-
-      scale_linetype_manual(values = c("Male" = "longdash", "Female" = "solid")) +
-
-          scale_size_manual(values = c("Male" = 1, "Female" = 2)) +  # Thicker line for Female
-  coord_cartesian(clip = "off")  +# Ensure text isn't clipped
-
-    forma_theme
-  
-  
-  return (graph)
-}
-
 
 ```
 
@@ -659,7 +564,7 @@ country_average(
 
 ```{r out_agg_gen_wgt,  echo=FALSE, fig.height=25, fig.width=25, dev = c("png"), dpi=100}
 # Figure 4: Employment, Health, & Living Arrangements over the Life Course: by Gender
-fac_row_agg_count_out_gender(
+fac_row_agg_gen_dis(
   out_dis_weighted_gender,
   measures,
   measures_labs_agg,
@@ -696,8 +601,6 @@ country_average(
 )
 ```
 
-
-
 ```{r dis_agg_gen_wgt, echo=FALSE,  fig.height=12, fig.width=19, dev = c("png"), dpi=100}
 # Figure 6: Functional Limitations over the Life Course By Gender
 fac_row_agg_gen_dis(
@@ -714,6 +617,9 @@ fac_row_agg_gen_dis(
     bre_age = bre_age, lab_age = lab_age
     )
 ```
+
+
+
 
 ```{r hea_care, echo=FALSE, fig.height=7.5, fig.width=15, dev = c("png"), dpi=100}
 # Figure 7: Social Protection across Selected Sub-Saharan African Countries
