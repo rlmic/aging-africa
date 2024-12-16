@@ -131,9 +131,9 @@ measures_labs <- c(
   "Functional\nLimitations\n(Proportion)", 
   "Illness\n&\nInjury\n(Proportion)", 
   "Stopped\nActivities\n(Proportion)", 
-  "Depression\nOr Psych Distress\n(Proportion)",
+  "Depression\nOr Psych\nDistress\n(Proportion)",
   "Employment\nStatus\n(Proportion)",
-  "Weekly\nEmployment Status\n(Hours)", 
+  "Weekly\nEmployment\nStatus\n(Hours)", 
   "Unmarried\n(Proportion)", 
   "Living alone\n(Proportion)", 
   "Urban Status\n(Proportion)"
@@ -183,12 +183,12 @@ limitations_labs <- c(
 )
 
 limit_labs  <- c(
-  "          Seeing          ", 
-  "  Hearing", 
-  "        Remembering",
-  "   Walking or \n Climbing",
-  " Self Care",
-  "        Communicating"
+  "\u00A0Seeing\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0", 
+  "Hearing\u00A0\u00A0\u00A0\u00A0\u00A0", 
+  "\u00A0\u00A0\u00A0\u00A0Remembering",
+  "Walking or \u00A0 \u00A0\u00A0\n Climbing \u00A0 \u00A0\u00A0 ",
+  "Self Care\u00A0\u00A0\u00A0\u00A0\u00A0",
+  "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0Communicating"
   )
 bre_age = c(
   "20",

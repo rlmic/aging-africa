@@ -85,6 +85,120 @@ add_segment <- function(x, yend) {
 }
 
 
+#' Theme for general outcomes in selected countries in Africa, which include
+#' remaining life expectancy, social protection, pension coverage, health care
+#' out of poclet, gov health, n of hospital beds, n of physicians
+
+
+base_theme <- function(
+    size_text = 18,
+    size_title = 23,
+    size_legend = 20,
+    color = "#344771",
+    grid_major = element_blank(),
+    grid_minor = element_blank(),
+    legend_position = "none"
+) {
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(angle = 0, size = size_title, hjust = 1),
+    axis.text = element_text(color = color, size = size_text),
+    axis.text.y = element_text(color = color, size = size_text, hjust = 0),
+    legend.position = legend_position,
+    legend.background = element_blank(),
+    legend.box.background = element_blank(),
+    legend.title = element_blank(),
+    legend.text = element_text(
+      margin = margin(t = 5, b = 5, unit = "pt"),
+      size = size_legend,
+      color = color
+    ),
+    legend.key.size = unit(6, "line"),
+    legend.key = element_blank(),
+    panel.background = element_blank(),
+    plot.background = element_blank(),
+    strip.background = element_rect(fill = "transparent", color = NA),
+    strip.text = element_markdown(color = color, size = size_title, face = "bold"),
+    panel.grid.major = grid_major,
+    panel.grid.minor = grid_minor,
+    panel.spacing = unit(5, "lines"),
+    plot.margin = margin(, 2, , , "cm"),
+    text = element_text(size = size_text, color = color)
+  )
+}
+
+# Individual Themes
+
+theme_broad_outc <- function(size_text = 16, size_title = 20, size_legend = 20, color = "#344771") {
+  base_theme(
+    size_text, size_title, size_legend, color,
+    legend_position = "bottom"
+  ) +
+    theme(
+      axis.text.y = element_blank(),
+      axis.line.x.bottom = element_line(),
+      axis.line.x.top = element_line(),
+      panel.spacing = unit(1.5, "lines")
+    )
+}
+
+theme_top_count <- function(size_text = 35, size_title = 42, size_legend = 32, color = "#344771") {
+  base_theme(
+    size_text, size_title, size_legend, color,
+    grid_major = element_line(linetype = "dashed"),
+    legend_position = "bottom"
+  ) +
+    theme(
+      legend.justification = "right",
+      panel.spacing.x = unit(5, "lines"),
+      panel.spacing.y = unit(3, "lines"),
+      axis.title.y = element_text(angle = 90, size = size_title, vjust = 0.5, hjust = 0.5),
+      axis.title = element_text(margin = margin(l = 20, b = 20), face = "bold")
+    )
+}
+
+
+
+theme_top <- function(size_text = 35, size_title = 42, size_legend = 42, color = "#344771") {
+  base_theme(
+    size_text, size_title, size_legend, color,
+    grid_major = element_line(linetype = "dashed")
+  ) +
+    theme(
+      axis.ticks.x = element_blank(),
+      panel.spacing.y = unit(7, "lines")
+    )
+}
+
+theme_middle <- function(size_text = 35, size_title = 42, color = "#344771") {
+  base_theme(
+    size_text, size_title, color = color,
+    grid_major = element_line(linetype = "dashed")
+  ) +
+    theme(
+      axis.text.x = element_blank(),
+      axis.ticks.x = element_blank(),
+      axis.text.y = element_text(color = color, size = size_title, hjust = 0),
+      strip.text.x = element_blank(),
+      panel.spacing.y = unit(7, "lines")
+    )
+}
+
+theme_bottom <- function(size_text = 38, size_title = 42, size_legend = 32, color = "#344771") {
+  base_theme(
+    size_text, size_title, size_legend, color,
+    grid_major = element_line(linetype = "dashed"),
+    legend_position = "bottom"
+  ) +
+    theme(
+      axis.title.x = element_text(size = size_title, face = "bold"),
+      axis.text.x = element_text(color = color, size = size_title),
+      strip.text.x = element_blank(),
+      legend.justification = "right"
+      
+    )
+}
+
 # Define reusable color palette and theme
 
 custom_theme <- theme_minimal() +
@@ -442,6 +556,7 @@ cond_fac_row <- function(data_col, y_label, weighted = TRUE, breaks_y, limits_y,
 }
 
 
+
 meas_count_gend <- function(weighted = TRUE, breaks_y = c(0, 0.5, 1), limits_y = c(0, 1.2), labels_y = c('0', '-', '1'), breaks_x = bre_age, labels_x = lab_age,
                                 data_cols, y_labels, order_first = "pop_row", custom_plots = NULL, 
                                 themes = list()) {
@@ -470,7 +585,7 @@ meas_count_gend <- function(weighted = TRUE, breaks_y = c(0, 0.5, 1), limits_y =
   } else {
     # If 'pop_row' is included, add it as the first plot
     a <- pop_row(theme_top()) + 
-      labs(y = "**Observations<br>(Count)**", face = 'bold') +
+      labs(y = "\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0Observations\n(Count)", face = 'bold') +
       scale_x_discrete(
         breaks = breaks_x,
         labels = labels_x,
@@ -523,7 +638,7 @@ meas_count_gend <- function(weighted = TRUE, breaks_y = c(0, 0.5, 1), limits_y =
 
 
 
-indi_cont_regi <- function(
+indi_coun_regi <- function(
     vars,
     labs,
     dat = dat_long,
@@ -571,4 +686,183 @@ indi_cont_regi <- function(
     ) 
   
   return(graph)
+}
+
+
+country_average <- function(
+    data,
+    vars,
+    labels,
+    forma_theme,
+    f_labels_data,
+    filter_condition = NULL,
+    size_count = 10,
+    geom_text_y = 0.25
+){
+  # Create labels for the facets
+  condition.labs <- labels
+  names(condition.labs) <- vars
+  
+  # Ensure levels for `age_group5` include an empty string
+  levels(data$age_group5) <- c(levels(data$age_group5), '')
+  
+  # Create the f_labels data frame
+  f_labels <- f_labels_data
+  f_labels$condition <- factor(f_labels$condition)
+  
+  # Apply filter condition if provided
+  if (!is.null(filter_condition)) {
+    data <- data %>% filter(!!rlang::parse_expr(filter_condition))
+  }
+  
+  # Create the plot
+  graph <- data %>%
+    mutate(label = ifelse(country == "Average", country, NA)) %>%
+    ggplot(
+      aes(x = age_group5, 
+          y = measurement, 
+          colour = I(ifelse(country == "Average", "#050A30", "#D3D3D3")), 
+          group = country)
+    ) +
+    facet_wrap(
+      . ~condition, 
+      ncol = 3, 
+      labeller = labeller(condition = condition.labs)
+    ) +
+    geom_rect(
+      aes(xmin = "60", xmax = "80", ymin = -Inf, ymax = Inf),
+      alpha = 0.006,
+      fill = "#344771"
+    ) +
+    theme_minimal() +
+    geom_line(size = 1.1) +
+    geom_line(
+      data = filter(data, (country == "Average")), 
+      size = 2, 
+      linetype = "solid"
+    ) +
+    geom_text(
+      x = "40", 
+      y = geom_text_y, 
+      aes(label = label), 
+      data = f_labels, 
+      size = 9, 
+      color = "#050A30"
+    ) +
+    scale_fill_manual(values = c("#D3D3D3")) +
+    forma_theme
+  
+  return(graph)
+}
+
+forma_axes <- function(plot, y_label = "Proportion", x_label = "Age", bre_age, lab_age) {
+  plot +
+    labs(y = y_label, x = x_label) +
+    scale_x_discrete(
+      breaks = bre_age,
+      labels = lab_age,
+      position = "bottom"
+    ) +
+    scale_y_continuous(
+      breaks = c(0, 0.5, 1),
+      labels = c('0', '–', '1'),
+      limits = c(0,1)
+    )
+}
+
+
+# Shared transformation function
+transformation <- function(
+    data,
+    var_vec,
+    ids,
+    var_nam,
+    val_nam,
+    summarize_group_vars = NULL,
+    country_transform = FALSE
+) {
+  # Ensure 'age_group5' is a factor and normalize 'work_hrs'
+  data$age_group5 <- as.factor(data$age_group5)
+  data$work_hrs <- data$work_hrs / 40
+  
+  # Reshape data using melt
+  data <- melt(
+    data,
+    id.vars = ids,
+    measure.vars = var_vec,
+    variable.name = var_nam,
+    value.name = val_nam
+  )
+  
+  # Apply filtering to exclude certain age groups
+  data <- data %>%
+    filter(!age_group5 %in% c("0", "5", "10", "15"))
+  
+  # Optionally transform country codes into full names
+  if (country_transform) {
+    data <- data %>%
+      mutate(
+        country = case_when(
+          country == "eth" ~ "Ethiopia",
+          country == "mlw" ~ "Malawi",
+          country == "nga" ~ "Nigeria",
+          country == "tza" ~ "Tanzania",
+          country == "gha" ~ "Ghana",
+          country == "saf" ~ "South~Africa",
+          country == "uga" ~ "Uganda",
+          country == "niger" ~ "Niger",
+          country == "ssa" ~ "Average",
+          TRUE ~ NA_character_
+        )
+      )
+  }
+  
+  # Optionally summarize the data by specific groups
+  if (!is.null(summarize_group_vars)) {
+    data <- data %>%
+      group_by(across(all_of(summarize_group_vars))) %>%
+      summarize(
+        !!val_nam := mean(get(val_nam), na.rm = TRUE),
+        .groups = "drop"
+      )
+  }
+  
+  return(data)
+}
+# Country-specific transformation
+count_avera <- function(
+    data,
+    var_vec,
+    ids = c("country", "age_group5"),
+    var_nam = "condition",
+    val_nam = "measurement"
+) {
+  transformation(
+    data = data,
+    var_vec = var_vec,
+    ids = ids,
+    var_nam = var_nam,
+    val_nam = val_nam,
+    summarize_group_vars = NULL,  # No summarization needed for country data
+    country_transform = TRUE  # Apply country name transformation
+  )
+}
+
+# Gender-specific transformation
+count_gender <- function(
+    data,
+    var_vec,
+    ids = c("female", "age_group5"),
+    var_nam = "condition",
+    val_nam = "measurement"
+) {
+  transformation(
+    data = data,
+    var_vec = var_vec,
+    ids = ids,
+    var_nam = var_nam,
+    val_nam = val_nam,
+    summarize_group_vars = c("female", "age_group5", var_nam),
+    country_transform = FALSE  # No country transformation for gender data
+  )
 }

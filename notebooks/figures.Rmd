@@ -181,281 +181,35 @@ high_inco <- process_income_group(dat, 'HIC')
 low_middle_inco <- process_income_group(dat, 'LMICs_nonSSA')
 sub_sahar_inco <- process_income_group(dat, 'Sub-Saharan Africa')
 
+
+# Main datasets transformed
+outcomes_weighted_country = count_avera(
+  subsaharan_weighted, measures
+  ) 
+
+outcomes_nonweighted_country = count_avera(
+  subsaharan_nonweighted, measures
+  ) 
+
+outcomes_weighted_country_lim = count_avera(
+  subsaharan_weighted, limitations
+  )  
+
+outcomes_nonweighted_country_lim = count_avera(
+  subsaharan_nonweighted, limitations
+  ) 
+
+
+out_dis_weighted_gender = count_gender(
+  gender_weighted, measures
+  )  
+
+outcomes_weighted_gender = count_gender(
+  gender_weighted, limitations
+  )  
 ```
 
 ```{r functions, include=FALSE}
-
-trans_input_count_gender <- function(
-    data,
-    var_vec,
-    ids = c("female", "age_group5"),
-    var_nam="condition",
-    val_nam="measurement"
- 
-){
-  data$age_group5 <- as.factor(data$age_group5)
-  data$work_hrs = data$work_hrs/40
-  data = melt(data,
-      id.vars=ids,
-      measure.vars=var_vec,
-      variable.name=var_nam,
-      value.name=val_nam
-  )
-  
-  data <- data %>% 
-    group_by(female, age_group5, condition) %>%  # Group by gender and age group only
-    filter(!age_group5  %in% c('0', '5', '10', '15')) %>% 
-        summarize(
-      !!val_nam := mean(get(val_nam), na.rm = TRUE),  # Example: take mean of the measurement
-      .groups = 'drop'  # Drop the group structure after summarizing
-    ) %>%
-    ungroup() 
-  return (data)
-}
-
-trans_input_count <- function(
-    data,
-    var_vec,
-    ids = c("country", "age_group5"),
-    var_nam="condition",
-    val_nam="measurement"
- 
-){
-  data$age_group5 <- as.factor(data$age_group5)
-  data$work_hrs = data$work_hrs/40
-  data = melt(data,
-      id.vars=ids,
-      measure.vars=var_vec,
-      variable.name=var_nam,
-      value.name=val_nam
-  )
-  
-  data <- data %>% 
-    group_by(age_group5, country) %>% 
-    filter(!age_group5  %in% c('0', '5', '10', '15')) %>% 
-    mutate(
-      country = case_when(
-        country == 'eth'
-         ~ 'Ethiopia',
-        country == 'mlw'
-         ~ 'Malawi',  
-        country == 'nga'
-         ~ 'Nigeria',  
-        country == 'tza'
-         ~ 'Tanzania',  
-        country == 'gha'
-         ~ 'Ghana', 
-        country == 'saf'
-         ~ 'South~Africa',
-        country == 'uga'
-         ~ 'Uganda',
-        country == 'niger'
-         ~ 'Niger',
-        country == 'ssa'
-         ~ 'Average',
-        TRUE ~ NA)
-    )
-  return (data)
-}
-
-#' Theme for general outcomes in selected countries in Africa, which include
-#' remaining life expectancy, social protection, pension coverage, health care
-#' out of poclet, gov health, n of hospital beds, n of physicians
-theme_broad_outc <- function(
-    size_text=18,
-    size_title=23,
-    size_legend=20,
-    color="#344771"
-){
-  top = theme(
-    axis.title.x = element_blank(),
-    panel.background = element_blank(),
-    plot.background = element_blank(),
-    panel.grid.major.x = element_blank(),
-    panel.grid.minor.x = element_blank(),
-    panel.grid.major.y = element_blank(),
-    panel.grid.minor.y = element_blank(),
-    strip.background=element_rect(fill = "transparent", color = NA),
-    axis.text = element_text(color = color, size = size_text, hjust = 0),
-    axis.text.y = element_blank(),
-    legend.background = element_blank(),
-    legend.box.background = element_blank(),
-    legend.position="bottom", 
-    axis.line.x.bottom =element_line(),
-    axis.line.x.top =element_line(),
-    legend.text = element_text(
-      margin = margin(t = size_legend, b = size_text, unit = "pt"),
-      size=size_legend
-      ),
-    legend.key.size = unit(3.5,"line"), 
-    legend.key = element_blank(),
-    text = element_text(size = size_text, color=color), 
-    strip.text = element_markdown(color = color, size=size_title),
-    axis.title.y = element_text(angle = 0),
-    panel.spacing = unit(1.5, "lines"),
-    plot.margin = margin(, 1.2, , , "cm")
-
-    )
-}
-
-
-theme_top_count <- function(
-    size_text=35,
-    size_title=42,
-    size_legend=32,
-    color="#344771"
-){
-  top = theme(
-    legend.position="bottom", 
-    legend.justification="right",
-    legend.title=element_blank(),
-    legend.text=element_text(
-      margin = margin(t = size_legend, b = size_legend, unit = "pt"),
-      size=size_legend
-      ),
-    legend.key.size = unit(6,"line"), 
-    strip.background=element_rect(fill = "transparent", color = NA),
-    axis.text = element_markdown(color = color, size = size_text),
-    text = element_text(size = size_text), 
-    strip.text = element_markdown(color = color, size=size_text),
-    panel.grid.major = element_line(linetype="dashed"),
-
-    axis.title = element_text(margin = margin(l = 20, b=20), color=color, size=size_text, face='bold'),
-    panel.spacing.x = unit(5, "lines"),
-    panel.spacing.y = unit(3, "lines")
-    )
-
-  return (top)
-} 
-theme_top_a <- function(
-    size_text=35,
-    size_title=42,
-    size_legend=42,
-    color="#344771"
-){
-  top = theme(
-    axis.title.x = element_blank(),
-    strip.background=element_rect(fill = "transparent", color = NA),
-    panel.grid.major = element_line(linetype="dashed"),
-    axis.text = element_text(color = color, size = size_title, hjust = 0),
-    legend.position="none",
-    axis.text.x = element_blank(),
-    axis.ticks.x = element_blank(),
-    text = element_text(size = size_text, color=color), 
-    strip.text = element_text(color = color, face = "bold", size=size_title),
-    axis.title.y = element_text(angle = 0, size=size_title),
-    panel.spacing.x = unit(5, "lines"),
-    panel.spacing.y = unit(7, "lines"),
-    plot.margin = margin(, 2, , , "cm")
-
-    )
-
-  return (top)
-}
-
-theme_top <- function(
-    size_text=35,
-    size_title=42,
-    size_legend=42,
-    color="#344771"
-
-){
-  top = theme(
-    axis.title.x = element_blank(),
-    strip.background=element_rect(fill = "transparent", color = NA),
-    panel.grid.major = element_line(linetype="dashed"),
-    axis.text = element_text(color = color, size = size_title, hjust = 0),
-
-
-    #axis.text.x = element_blank(),
-    legend.position = "none", 
-    legend.justification = "right",
-    axis.ticks.x = element_blank(),
-    legend.title=element_blank(),
-    legend.text = element_text(
-      margin = margin(t = size_legend, b = size_legend, unit = "pt"),
-      size=size_legend,
-      color = color
-      ),
-    legend.key.size = unit(6,"line"), 
-
-    text = element_text(size = size_text, color=color), 
-    strip.text = element_text(size = size_text, color=color, face = "bold"),
-    axis.title.y = element_markdown(angle = 0, size=size_title),
-    panel.spacing.x = unit(5, "lines"),
-    panel.spacing.y = unit(7, "lines"),
-    plot.margin = margin(, 2, , , "cm")
-
-    )
-
-  return (top)
-}
-
-
-theme_middle <- function(
-    size_text=35,
-    size_title=42,
-    color="#344771"
-
-){
-  middle = theme(
-    strip.background = element_blank(),
-    axis.text.y = element_text(color = color, size = size_title, hjust = 0),
-    plot.background=element_rect(fill = "transparent", color = NA),
-        panel.grid.major = element_line(linetype="dashed"),
-
-    strip.text.x = element_blank(), 
-    
-    text = element_text(size = size_text, color=color), 
-    legend.position="none",
-    axis.title.x = element_blank(),
-    axis.text.x = element_blank(),
-    axis.ticks.x = element_blank(),
-    axis.title.y = element_text(angle = 0, size=size_title),
-    panel.spacing.x = unit(5, "lines"),
-    panel.spacing.y = unit(7, "lines"),
-    plot.margin = margin(, 2, , , "cm")
-    )
-
-  return (middle)
-}
-
-
-theme_bottom <- function(
-    size_text=38,
-    size_title=42,
-    size_legend=32,
-    color="#344771"
-){
-  bottom = theme(
-    strip.background = element_blank(),
-    plot.background=element_rect(fill = "transparent", color = NA),
-    axis.text = element_text(color = color, size = size_title, hjust = 0),
-    axis.text.x = element_text(color =color, size = size_title),
-
-    strip.text.x = element_blank(), 
-    legend.position="bottom", 
-    legend.justification = "right",
-    legend.title=element_blank(),
-        panel.grid.major = element_line(linetype="dashed"),
-
-    legend.text = element_text(
-      margin = margin(t = size_legend, b = size_legend, unit = "pt"),
-      size=size_legend,
-      color = color
-      ),
-    legend.key.size = unit(6,"line"), 
-    
-    text = element_text(size = size_text, color=color),
-    axis.title.y = element_text(angle = 0, size=size_title),
-    axis.title.x = element_text(size=size_title, color=color, face = "bold"),
-    panel.spacing.x = unit(5, "lines"),
-    panel.spacing.y = unit(7, "lines"),
-    plot.margin = margin(, 2, , , "cm")
-    )
-
-  return (bottom)
-}
 
 get_count <- function(
     var
@@ -481,116 +235,11 @@ get_count <- function(
     group_by(country) %>% 
     summarise(n = paste0("N=", scales::comma(sum(n), accuracy = 1)), .groups = 'drop')
   
-  # Merge the two summaries
   count <- merge(annot0, annot1, by = "country")
   
   return(count)
 }
 
-
-
-fac_row_agg_count_out <- function(
-    data,
-    vars,
-    labels,
-    forma_theme,
-    size_count=10
-){
-  
-  condition.labs <- labels
-  names(condition.labs) <- vars
-  levels(data$age_group5) <- c(levels(data$age_group5),'')
-  levels(data$age_group5) <- c(levels(data$age_group5),'')
-  f_labels <- data.frame(
-    condition = measures, 
-    country = c( "Average", "", "", "", "", "", "", "", ""),
-    label = c( "Average", "", "", "", "", "", "", "", "Average"))
-  f_labels$condition = factor(f_labels$condition)
-
-  graph <-data %>%  
-    mutate(label = ifelse(country== "Average", country, NA)) %>%
-    ggplot(
-      aes(x = age_group5, y = measurement, colour = I(ifelse(country ==  "Average", "#050A30", "#D3D3D3")), group=country)
-      ) +
-    facet_wrap(
-      . ~condition, 
-      ncol = 3, 
-      labeller = labeller(condition=condition.labs)#,
-      #scales='free_y'
-
-      ) +
-    geom_rect(
-      aes(xmin = "60", xmax = "80", ymin = -Inf, ymax = Inf),
-      #alpha = 0.009,
-      alpha=0.006,
-      fill="#344771"
-      #fill = "#000C66"
-        ) +
-    #geom_dl(aes(label = label), method = list(dl.trans(x = x + 0.05), "last.points", cex = 0.8)) +
-    theme_minimal() +
-    #geom_line(size = 1) +
-    geom_line(size=1.1) +
-    geom_line(data = filter(data, (country ==  "Average" & condition!='healthinsurance_ever')), size = 2, linetype="solid")+#, linetype="dashed")+
-  geom_text(x = "40", y = 0.25, aes(label = label), data = f_labels, size=9, color="#050A30")+
-
-    scale_fill_manual(values = c("#D3D3D3")) +
-    forma_theme
-  
-  
-  return (graph)
-}
-
- 
-fac_row_agg_count_dis <- function(
-    data,
-    vars,
-    labels,
-    forma_theme,
-    size_count=10
-){
-  condition.labs <- labels
-  names(condition.labs) <- vars
-  levels(data$age_group5) <- c(levels(data$age_group5),'')
-  levels(data$age_group5) <- c(levels(data$age_group5),'')
-  f_labels <- data.frame(condition = c("diff_seei", 
-  "diff_hear",
-  "diff_reme",
-  "diff_walk_clim",
-  "diff_self_care",
-  "diff_comm"), country = c( "Average", "", "", "", "", ""),
-  label = c( "Average", "", "", "", "",  "Average"))
-  f_labels$condition = factor(f_labels$condition)
-
-  graph <-data %>%  
-    filter(str_detect(condition, 'diff')) %>% 
-    mutate(label = ifelse(country==  "Average", country, NA)) %>%
-    ggplot(
-      aes(x = age_group5, y = measurement, colour = I(ifelse(country ==  "Average", "#050A30", "#D3D3D3")), group=country)
-      ) + 
-    facet_wrap(
-      . ~condition, 
-      ncol = 3, 
-      labeller = labeller(condition=condition.labs)#,
-      #scales='free_y'
-
-      ) +
-    geom_rect(
-      aes(xmin = "60", xmax = "80", ymin = -Inf, ymax = Inf),
-      alpha=0.006,
-      fill="#344771"
-        ) +
-    theme_minimal() +
-    geom_line(size=1.1) +
-    geom_line(data = filter(data, (country ==  "Average" & str_detect(condition, 'diff'))), size = 2, linetype="solid")+
-  geom_text(x = "40", y = 0.15, aes(label = label), data = f_labels, size=9, color="#050A30")+
-
-    scale_fill_manual(values = c("#D3D3D3")) +
-
-    forma_theme
-  
-  
-  return (graph)
-}
 
 fac_row_agg_gen_dis <- function(
   data,
@@ -628,6 +277,22 @@ fac_row_agg_gen_dis <- function(
   )
   f_labels2$condition = factor(f_labels2$condition, levels = condition_order)
 
+  f_labels3 <- data.frame(
+    condition = condition_order,  
+    female = c("", "", "", "", "", "Female"),
+    label = c("", "", "", "", "", "Female")
+  )
+  f_labels3$condition = factor(f_labels2$condition, levels = condition_order)
+
+  
+  f_labels4 <- data.frame(
+    condition = condition_order,  
+    condition = condition_order,  
+    female = c("", "", "", "", "", "Male"),
+    label = c("", "", "", "", "", "Male")
+  )
+  f_labels4$condition = factor(f_labels2$condition, levels = condition_order)
+
   data$female <- factor(data$female, levels = c(1, 0), labels = c("Female", "Male"))
 
   graph <- data %>%  
@@ -650,6 +315,8 @@ fac_row_agg_gen_dis <- function(
   geom_line(aes(size = female)) +  # Apply size mapping based on the 'female' variable
     geom_text(x = "55", y = 0.10, aes(label = label), data = f_labels, size = 9, color = "#050A30") +
     geom_text(x = "40", y = 0.17, aes(label = label), data = f_labels2, size = 9, color = "#8eb67d") +
+        geom_text(x = "65", y = 0.15, aes(label = label), data = f_labels3, size = 9, color = "#8eb67d") +
+    geom_text(x = "75", y = 0.08, aes(label = label), data = f_labels4, size = 9, color = "#050A30") +
 
     scale_fill_manual(values = c("#D3D3D3")) +        
     scale_color_manual(values = c("Male" = "#050A30", "Female" = "#8eb67d")) +  # Color Female lines with #8eb67d
@@ -747,34 +414,6 @@ fac_row_agg_count_out_gender <- function(
 
 ```
 
-```{r include=FALSE}
-outcomes_weighted_country = trans_input_count(
-  subsaharan_weighted, measures
-  ) 
-
-outcomes_nonweighted_country = trans_input_count(
-  subsaharan_nonweighted, measures
-  ) 
-
-outcomes_weighted_country_lim = trans_input_count(
-  subsaharan_weighted, limitations
-  )  
-
-
-outcomes_nonweighted_country_lim = trans_input_count(
-  subsaharan_nonweighted, limitations
-  ) 
-
-
-out_dis_weighted_gender = trans_input_count_gender(
-  gender_weighted, measures
-  )  
-
-outcomes_weighted_gender = trans_input_count_gender(
-  gender_weighted, limitations
-  )  
-
-```
 
 
 ```{r include=FALSE}
@@ -876,9 +515,6 @@ fig2d <- create_plot(
   y_limits = c(0, 200000, 400000, 600000, 800000), 
   y_labels = c("0", "-", "400M", "-", "800M")
 ) 
-
-
-
 ```
 
 
@@ -950,22 +586,22 @@ wrap_elements(panel = depratov60  + oldageratov60 ) +
 ```
 
 
-
 ```{r out_agg_ctr_wgt, echo=FALSE,  fig.height=25, fig.width=25, dev = c("png"), dpi=100}
 # Figure 3: Employment, Health, & Living Arrangements over the Life Course: Aggregate
-fac_row_agg_count_out(
-  outcomes_weighted_country,
-  measures,
-  measures_labs_agg,
-  theme_top_count())+ 
-  labs(y = "Proportion", x = "Age") + 
-  scale_x_discrete(
-      breaks=bre_age,
-      labels=lab_age,
-      position="bottom"
-      )+
-  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '–', '1'))
-
+meas_labs_text <- data.frame(
+  condition = measures, 
+  country = c("Average", "", "", "", "", "", "", "", ""),
+  label = c("Average", "", "", "", "", "", "", "", "Average")
+)
+country_average(
+    data = outcomes_weighted_country,
+    vars = measures,
+    labels = measures_labs_agg,
+    forma_theme = theme_top_count(),
+    f_labels_data = meas_labs_text
+    ) %>% forma_axes(
+    bre_age = bre_age, lab_age = lab_age
+    )
 ```
 
 
@@ -976,39 +612,30 @@ fac_row_agg_count_out_gender(
   measures,
   measures_labs_agg,
   theme_top_count()
-  )+ 
-  labs(y = "Proportion", x = "Age") + 
-  scale_x_discrete(
-      breaks=bre_age,
-      labels=lab_age,
-      position="bottom"
-      )+
-  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '–', '1'), limits = c(0, 1))
+  ) %>% forma_axes(
+    bre_age = bre_age, lab_age = lab_age
+    )
 ```
-
 
 ```{r dis_agg_ctr_wgt, echo=FALSE,  fig.height=12, fig.width=19, dev = c("png"), dpi=100}
 # Figure 5: Functional Limitations over the Life Course
-fac_row_agg_count_dis(
-  outcomes_weighted_country_lim,
-  limitations,
-  limitations_labs,
-  theme_top_count(
-    size_text=23,
-    size_title=28,
-    size_legend=18,
-    color="#344771"
-  ))+ 
-  labs(y = "Proportion", x = "Age") + 
-  scale_x_discrete(
-      breaks=bre_age,
-      labels=lab_age,
-      position="bottom"
-      )+ 
-  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '–', '1'), limits = c(0, 1))
-
+limi_labs_text <- data.frame(
+  condition = limitations, 
+  country = c("Average", "", "", "", "", ""),
+  label = c("Average", "", "", "", "", "Average")
+)
+country_average(
+    data = outcomes_weighted_country_lim,
+    vars = limitations,
+    labels = limitations_labs,
+    forma_theme = theme_top_count(size_text = 23, size_title = 28, size_legend = 18, color = "#344771"),
+    f_labels_data = limi_labs_text,
+    filter_condition = "str_detect(condition, 'diff')",
+    geom_text_y = 0.15
+    ) %>% forma_axes(
+    bre_age = bre_age, lab_age = lab_age
+    )
 ```
-
 
 
 
@@ -1023,20 +650,15 @@ fac_row_agg_gen_dis(
     size_title=28,
     size_legend=18,
     color="#344771"
-  ))+ 
-  labs(y = "Proportion", x = "Age") + 
-  scale_x_discrete(
-      breaks=bre_age,
-      labels=lab_age,
-      position="bottom"
-      )+ 
-  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '–', '1'), limits = c(0, 1))  # Remove the legend
-
+    )
+  ) %>% forma_axes(
+    bre_age = bre_age, lab_age = lab_age
+    )
 ```
 
 ```{r hea_care, echo=FALSE, fig.height=7.5, fig.width=15, dev = c("png"), dpi=100}
 # Figure 7: Social Protection across Selected Sub-Saharan African Countries
-indi_cont_regi(
+indi_coun_regi(
   vars=indicators,
   labs=indicato_labeller
   )
@@ -1045,9 +667,9 @@ indi_cont_regi(
 
 ```{r environ, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
 #Figure 8: Health Spending and Health Care Capacity across Selected Sub-Saharan African Countries
-indi_cont_regi(
-  vars=indicators,
-  labs=indicato_labeller
+indi_coun_regi(
+  vars=var_hea,
+  labs=labeller_health
   )
 ```
 
@@ -1124,7 +746,7 @@ meas_count_gend(
   order_first = "", 
   custom_plots = NULL, 
   themes = list(
-  "diff_seei" = theme_top_a(),
+  "diff_seei" = theme_top(),
   "diff_reme" = theme_bottom(),
   "diff_comm" = theme_bottom()
   )
@@ -1134,19 +756,14 @@ meas_count_gend(
 
 ```{r outcomes_aggregate_nonweighted, echo=FALSE,  fig.height=25, fig.width=25, dev = c("png"), dpi=100}
 # Online Appendix Figure A5: Employment, Health, & Living Arrangements over the Life Course: Aggregate, no weights
-fac_row_agg_count_out(
-  outcomes_nonweighted_country,
-  measures,
-  measures_labs_agg,
-  theme_top_count())+ 
-  labs(y = "Proportion", x = "Age") + 
-  scale_x_discrete(
-      breaks=bre_age,
-      labels=lab_age,
-      position="bottom"
-      )+
-  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '–', '1'))
 
+country_average(
+    data = outcomes_nonweighted_country,
+    vars = measures,
+    labels = measures_labs_agg,
+    forma_theme = theme_top_count(),
+    f_labels_data = meas_labs_text
+    ) %>% forma_axes(bre_age = bre_age, lab_age = lab_age)
 ```
 
 
@@ -1172,24 +789,16 @@ meas_count_gend(
 
 ```{r disabilities_aggregate_nonweighted, echo=FALSE,  fig.height=12, fig.width=19, dev = c("png"), dpi=100}
 # Online Appendix Figure A8: Functional Limitations over the Life Course: Aggregate, no weights
-fac_row_agg_count_dis(
-  outcomes_nonweighted_country_lim,
-  limitations,
-  limitations_labs,
-  theme_top_count(
-    size_text=23,
-    size_title=28,
-    size_legend=18,
-    color="#344771"
-  ))+ 
-  labs(y = "Proportion", x = "Age") + 
-  scale_x_discrete(
-      breaks=bre_age,
-      labels=lab_age,
-      position="bottom"
-      )+ 
-  scale_y_continuous(breaks=c(0,0.5, 1), labels = c('0', '–', '1'), limits = c(0, 1))
 
+country_average(
+    data = outcomes_nonweighted_country_lim,
+    vars = limitations,
+    labels = limitations_labs,
+    forma_theme = theme_top_count(size_text = 23, size_title = 28, size_legend = 18, color = "#344771"),
+    f_labels_data = limi_labs_text,
+    filter_condition = "str_detect(condition, 'diff')",
+    geom_text_y = 0.15
+    ) %>% forma_axes(bre_age = bre_age, lab_age = lab_age)
 ```
 
 
@@ -1210,7 +819,7 @@ meas_count_gend(
   order_first = "", 
   custom_plots = NULL, 
   themes = list(
-  "diff_seei" = theme_top_a(),
+  "diff_seei" = theme_top(),
   "diff_reme" = theme_bottom(),
   "diff_comm" = theme_bottom()
   )
