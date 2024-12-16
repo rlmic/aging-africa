@@ -199,59 +199,68 @@ theme_bottom <- function(size_text = 38, size_title = 42, size_legend = 32, colo
     )
 }
 
-# Define reusable color palette and theme
-
-custom_theme <- theme_minimal() +
-  theme(
-    panel.grid = element_blank(),
-    axis.text.y = element_blank(),
-    plot.title = element_markdown(size = 20, color = "#344771", hjust = 0.5),
-    axis.text.x = element_text(size = 20, margin = margin(5, 0, 0, 0)),
-    text = element_text(size = 20),
-    plot.margin = unit(c(0, 0.75, 0, 0), "inches"),
-    legend.position = "none",
-    panel.grid.major.x = element_line(color = "grey", size = 0.3, linetype = 2)
-  )
-
-# Define a function for repetitive curve segments
-add_curves <- function() {
-  list(
-    geom_curve(aes(x = 1990, xend = 2019, y = -5000, yend = 4000), inherit.aes = FALSE, curvature = 0.2, color = "grey"),
-    geom_curve(aes(x = 2021, xend = 2049, y = -5000, yend = 4000), inherit.aes = FALSE, curvature = 0.2, color = "grey"),
-    geom_curve(aes(x = 2051, xend = 2100, y = -5000, yend = 4000), inherit.aes = FALSE, curvature = 0.2, color = "grey")
-  )
-}
-
-# Define a function to encapsulate shared plot logic
-create_plot <- function(data, title, y_limits, y_labels) {
-  ggplot(data %>% filter(countryregion != 'Rest of World'), 
-         aes(condition, measurement, fill = countryregion, label = countryregion)) +
+base_plot_comp <- function(data, title, y_labels, y_limits) {
+  ggplot(data, aes(condition, measurement, fill = countryregion, label = countryregion)) +
     geom_line(aes(color = countryregion, size = countryregion, linetype = countryregion)) + 
     geom_point(aes(color = countryregion)) +
     scale_size_manual(values = c(1.4, 1.4, 1.4)) +
     scale_linetype_manual(values = c("solid", "dashed", "dotted")) +
-    scale_x_continuous(breaks = c(1990, 2020, 2050, 2100), labels = c("1990", "2020", "2050", "2100")) +
-    scale_y_continuous(breaks = y_limits, labels = y_labels, limits = c(0, max(y_limits))) +
-    scale_color_manual(values = pal) +
-    geom_label(data = . %>% mutate(
-      # Adjusted placements as an example; ideally, set dynamically
-      condition = case_when(
-        condition %in% c(1990) ~ NA,
-        condition == 2020 ~ 2005,
-        condition == 2050 ~ 2035,
-        condition == 2100 ~ 2075
-      ),
-      measurement = case_when(
-        name_lab == '+ 63 %' ~ 2776948, 
-        name_lab == '- 8 %' ~ 1600170,
-        name_lab == '- 42 %' ~ 1039655,
-        TRUE ~ measurement # Fallback to original measurement if unmatched
-      )
-    ), aes(label = name_lab, colour = countryregion), fill = 'white', size = 5, check_overlap = TRUE) +
     coord_cartesian(clip = "off") +
+    theme_minimal() +
     labs(title = title, y = "", x = "") +
-    custom_theme +
-    add_curves()
+    theme_minimal() +
+    theme(
+      panel.grid.minor = element_blank(),
+      panel.grid.major = element_line(linetype = "dotted"),
+      axis.text.y = element_blank(),
+      text = element_text(size = 20, color = "#344771"),
+      plot.title = element_markdown(size = 20, color = "#344771", hjust = 0.5),
+      axis.text = element_markdown(size = 20, margin = margin(5, 0, 0, 0)),
+      plot.background = element_blank(),
+      panel.background = element_blank(),
+      plot.margin = margin(1, 20, 0, 0),
+      legend.position = "none",
+      axis.line.x = element_line(size = 0.5, colour = "#344771", linetype = 1)
+    ) +
+    scale_x_continuous(
+      breaks = c(1990, 2020, 2050, 2100), 
+      labels = c("1990", "2020", "2050", "2100")
+    ) +
+    scale_color_manual(values = pal) +
+    scale_y_continuous(breaks = y_labels, labels = y_labels, limits = y_limits)
+}
+
+# Add labels to the plot
+enrich_with_labels <- function(plot, label_data, curvature) {
+  plot +
+    geom_label(
+      data = label_data,
+      aes(label = name_lab, colour = countryregion), 
+      fill = 'white', 
+      size = 5,
+      check_overlap = FALSE
+    ) +
+    geom_text_repel(
+      aes(color = countryregion, label = lab),
+      segment.angle = 1,
+      size = 4,
+      vjust = -1,
+      segment.size = 0.5,
+      segment.alpha = 0.5,
+      segment.linetype = "dotted",
+      segment.curvature = curvature
+    )
+}
+
+# Add curves to the plot
+add_curves <- function(plot) {
+  plot +
+    geom_curve(aes(x = 1990, y = -5000, xend = 2019, yend = 4000), 
+               inherit.aes = FALSE, curvature = 0.2, color = "grey") +
+    geom_curve(aes(x = 2021, y = -5000, xend = 2049, yend = 4000), 
+               inherit.aes = FALSE, curvature = 0.2, color = "grey") +
+    geom_curve(aes(x = 2051, y = -5000, xend = 2100, yend = 4000), 
+               inherit.aes = FALSE, curvature = 0.2, color = "grey")
 }
 
 # Define a reusable function for dependency ratio plots

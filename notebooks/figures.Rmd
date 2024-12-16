@@ -207,7 +207,56 @@ out_dis_weighted_gender = count_gender(
 outcomes_weighted_gender = count_gender(
   gender_weighted, limitations
   )  
+
+# DATA Fig2C
+fig2c_data <- totpop %>% filter(countryregion != 'Rest of World')
+
+fig2c_labels <- fig2c_data %>% mutate(
+  condition = case_when(
+    condition %in% c(1990) ~ NA,
+    condition == 2020 ~ 2005,
+    condition == 2050 ~ 2035,
+    condition == 2100 ~ 2075
+  ),
+  measurement = case_when(
+    name_lab == '+ 63 %' ~ 2776948, 
+    name_lab == '- 8 %' ~ 1600170,
+    name_lab == '- 42 %' ~ 1039655,
+    name_lab == '+ 123 %' ~ 803083.2,
+    name_lab == '+ 60 %' ~ 1133420 - 40000,
+    name_lab == '+ 24 %' ~ 1289317,
+    name_lab == '+ 20 %' ~ 1533439 + 40000,
+    name_lab == '- 8 %' ~ 1068783,
+    name_lab == '+ 90 %' ~ 1753968
+  )
+)
+
+# DATA Fig2D
+fig2d_data <- over60 %>% filter(countryregion != 'Rest of World')
+fig2d_labels <- fig2d_data %>% mutate(
+  condition = case_when(
+    condition %in% c(1990) ~ NA,
+    condition == 2020 ~ 2005,
+    condition == 2050 ~ 2035,
+    condition == 2100 ~ 2075
+  ),
+  measurement = case_when(
+    name_lab == '+ 313 %' ~ 400078.6, 
+    name_lab == '+ 59 %' ~ 449769.9 + 20000,
+    name_lab == '- 29 %' ~ 435510.7,
+    name_lab == '+ 194 %' ~ 104476.2,
+    name_lab == '+ 144 %' ~ 244946.5,
+    name_lab == '+ 100 %' ~ 381784.9,
+    name_lab == '+ 121 %' ~ 38513.54,
+    name_lab == '+ 155 %' ~ 99004.16,
+    name_lab == '+ 171 %' ~ 173914.6
+  )
+)
+
+
 ```
+
+
 
 ```{r functions, include=FALSE}
 
@@ -487,34 +536,18 @@ fig2b <- ggplot(over60, aes(condition, measurement, fill = countryregion, label 
   scale_x_continuous(breaks = breaks_numer, labels = breaks_text)
 
 # Plot 2c
+fig2c <- base_plot_comp(fig2c_data, '**C.** General Population (Growth)', 
+                   y_labels = c(0, 500000, 1000000, 1500000, 2000000, 2500000, 3000000, 3500000), 
+                   y_limits = c(0, 3500000)) %>%
+  enrich_with_labels(fig2c_labels, curvature = -0.3) %>%
+  add_curves()
 
-fig2c <- create_plot(
-  totpop, 
-  title = '**C.** General Population (Growth)', 
-  y_limits = c(0, 500000, 1000000, 1500000, 2000000, 2500000, 3000000, 3500000), 
-  y_labels = c("0", "-", "1B", "-", "2B", "-", "3B", "-")
-) + geom_text_repel(
-    aes(color = countryregion, label = name_lab),
-    segment.angle = 10,
-    size = 7.5,
-    direction = "y",
-    hjust = 0,
-    vjust = 1.7,
-    segment.size = .4,
-    segment.alpha = .5,
-    segment.linetype = "dotted",
-    box.padding = .2,
-    segment.curvature = -0.1
-    ) 
+fig2d <- base_plot_comp(fig2d_data, '**D.** Over 60 Population (Growth)', 
+                   y_labels = c(0, 200000, 400000, 600000, 800000), 
+                   y_limits = c(0, 800000)) %>%
+  enrich_with_labels(fig2d_labels, curvature = -0.1) %>%
+  add_curves()
 
-# Plot 2d
-
-fig2d <- create_plot(
-  over60, 
-  title = '**D.** Over 60 Population (Growth)', 
-  y_limits = c(0, 200000, 400000, 600000, 800000), 
-  y_labels = c("0", "-", "400M", "-", "800M")
-) 
 ```
 
 
@@ -545,6 +578,9 @@ newggslopegraph(
 # Panels A & B
 fig2a | fig2b  
 ```
+
+
+
 
 ```{r ov60_growth, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
 # Figure 2: Projected Population Growth and Dependency Ratios
