@@ -199,11 +199,11 @@ theme_bottom <- function(size_text = 38, size_title = 42, size_legend = 32, colo
     )
 }
 
-base_plot_comp <- function(data, title, y_labels, y_limits) {
+base_plot_comp <- function(data, title, y_labels, y_limits, line_sizes = c(1.6, 0.9, 0.9)) {
   ggplot(data, aes(condition, measurement, fill = countryregion, label = countryregion)) +
     geom_line(aes(color = countryregion, size = countryregion, linetype = countryregion)) + 
     geom_point(aes(color = countryregion)) +
-    scale_size_manual(values = c(1.4, 1.4, 1.4)) +
+    scale_size_manual(values = line_sizes) +
     scale_linetype_manual(values = c("solid", "dashed", "dotted")) +
     coord_cartesian(clip = "off") +
     theme_minimal() +
@@ -231,8 +231,8 @@ base_plot_comp <- function(data, title, y_labels, y_limits) {
 }
 
 # Add labels to the plot
-enrich_with_labels <- function(plot, label_data, curvature) {
-  plot +
+enrich_with_labels <- function(plot, label_data, curvature, show_countryregion_labels = TRUE) {
+  plot <- plot +
     geom_label(
       data = label_data,
       aes(label = name_lab, colour = countryregion), 
@@ -243,15 +243,36 @@ enrich_with_labels <- function(plot, label_data, curvature) {
     geom_text_repel(
       aes(color = countryregion, label = lab),
       segment.angle = 1,
-      size = 4,
-      vjust = -1,
-      segment.size = 0.5,
+      size = 6,
+      hjust = 0,
+      vjust = -1.8,
+      segment.size = 1.1,
       segment.alpha = 0.5,
       segment.linetype = "dotted",
-      segment.curvature = curvature
+      segment.curvature = curvature,
+      box.padding = .4
     )
-}
+  
+  # Add `countryregion` labels conditionally
+  if (show_countryregion_labels) {
+    plot <- plot + 
+      geom_text_repel(
+        data = label_data,
+        aes(color = countryregion, label = namecountry),
+        segment.angle = 10,
+        size = 7.5,
+        hjust = -4.5,
+        vjust = 2.7,
+        segment.size = 0.4,
+        segment.alpha = 0.5,
+        segment.linetype = "dotted",
+        segment.curvature = curvature,
+        box.padding = 0.2
+      )
+  }
 
+  return(plot)
+}
 # Add curves to the plot
 add_curves <- function(plot) {
   plot +
@@ -706,7 +727,9 @@ country_average <- function(
     f_labels_data,
     filter_condition = NULL,
     size_count = 10,
-    geom_text_y = 0.25
+    geom_text_x = "40",  # Default x position for text
+    geom_text_y = 0.25,  # Default y position for text
+    label_conditions = NULL  # New argument to define label placement
 ){
   # Create labels for the facets
   condition.labs <- labels
@@ -722,6 +745,12 @@ country_average <- function(
   # Apply filter condition if provided
   if (!is.null(filter_condition)) {
     data <- data %>% filter(!!rlang::parse_expr(filter_condition))
+  }
+  
+  # Adjust `f_labels_data` based on `label_conditions`
+  if (!is.null(label_conditions)) {
+    f_labels <- f_labels %>% 
+      mutate(label = ifelse(condition %in% label_conditions, "Average", NA))
   }
   
   # Create the plot
@@ -751,8 +780,8 @@ country_average <- function(
       linetype = "solid"
     ) +
     geom_text(
-      x = "40", 
-      y = geom_text_y, 
+      x = geom_text_x,  # Customizable x position
+      y = geom_text_y,  # Customizable y position
       aes(label = label), 
       data = f_labels, 
       size = 9, 
@@ -763,6 +792,7 @@ country_average <- function(
   
   return(graph)
 }
+
 
 forma_axes <- function(plot, y_label = "Proportion", x_label = "Age", bre_age, lab_age) {
   plot +

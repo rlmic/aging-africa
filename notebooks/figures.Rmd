@@ -228,11 +228,13 @@ fig2c_labels <- fig2c_data %>% mutate(
     name_lab == '+ 20 %' ~ 1533439 + 40000,
     name_lab == '- 8 %' ~ 1068783,
     name_lab == '+ 90 %' ~ 1753968
-  )
+  ),
+  namecountry = if_else(condition == 2075, countryregion, NA_character_)
 )
 
 # DATA Fig2D
 fig2d_data <- over60 %>% filter(countryregion != 'Rest of World')
+
 fig2d_labels <- fig2d_data %>% mutate(
   condition = case_when(
     condition %in% c(1990) ~ NA,
@@ -250,11 +252,13 @@ fig2d_labels <- fig2d_data %>% mutate(
     name_lab == '+ 121 %' ~ 38513.54,
     name_lab == '+ 155 %' ~ 99004.16,
     name_lab == '+ 171 %' ~ 173914.6
-  )
+  ),
+  namecountry = if_else(condition == 2075, countryregion, NA_character_)
 )
 
 
 ```
+
 
 
 
@@ -539,13 +543,15 @@ fig2b <- ggplot(over60, aes(condition, measurement, fill = countryregion, label 
 fig2c <- base_plot_comp(fig2c_data, '**C.** General Population (Growth)', 
                    y_labels = c(0, 500000, 1000000, 1500000, 2000000, 2500000, 3000000, 3500000), 
                    y_limits = c(0, 3500000)) %>%
-  enrich_with_labels(fig2c_labels, curvature = -0.3) %>%
+  enrich_with_labels(fig2c_labels, curvature = -0.3, show_countryregion_labels = TRUE) %>%
   add_curves()
+
+
 
 fig2d <- base_plot_comp(fig2d_data, '**D.** Over 60 Population (Growth)', 
                    y_labels = c(0, 200000, 400000, 600000, 800000), 
                    y_limits = c(0, 800000)) %>%
-  enrich_with_labels(fig2d_labels, curvature = -0.1) %>%
+  enrich_with_labels(fig2d_labels, curvature = -0.1, show_countryregion_labels = FALSE) %>%
   add_curves()
 
 ```
@@ -622,22 +628,32 @@ wrap_elements(panel = depratov60  + oldageratov60 ) +
 ```
 
 
-```{r out_agg_ctr_wgt, echo=FALSE,  fig.height=25, fig.width=25, dev = c("png"), dpi=100}
+```{r out_agg_ctr_wgt, echo=FALSE, fig.height=25, fig.width=25, dev = c("png"), dpi=100}
 # Figure 3: Employment, Health, & Living Arrangements over the Life Course: Aggregate
+
+# Define measures and label_conditions
+label_measu <- c("disability", "depressed", "notmarried") 
+
+# Define f_labels_data
 meas_labs_text <- data.frame(
   condition = measures, 
   country = c("Average", "", "", "", "", "", "", "", ""),
-  label = c("Average", "", "", "", "", "", "", "", "Average")
+  label = c("Average", "", "", "", "", "", "", "", "")
 )
+# Call the function with customizable text position
 country_average(
     data = outcomes_weighted_country,
     vars = measures,
     labels = measures_labs_agg,
     forma_theme = theme_top_count(),
-    f_labels_data = meas_labs_text
-    ) %>% forma_axes(
+    f_labels_data = meas_labs_text,
+    label_conditions = label_measu,  # Pass label conditions
+    geom_text_x = "40",  # Custom x position for the text
+    geom_text_y = 0.30    # Custom y position for the text
+) %>% forma_axes(
     bre_age = bre_age, lab_age = lab_age
-    )
+)
+
 ```
 
 
@@ -655,22 +671,29 @@ fac_row_agg_count_out_gender(
 
 ```{r dis_agg_ctr_wgt, echo=FALSE,  fig.height=12, fig.width=19, dev = c("png"), dpi=100}
 # Figure 5: Functional Limitations over the Life Course
+
+# Define measures and label_conditions
+label_limit <- c("diff_seei", "diff_walk_clim") # Specify conditions where the label appears
+
+# Define f_labels_data
 limi_labs_text <- data.frame(
   condition = limitations, 
   country = c("Average", "", "", "", "", ""),
-  label = c("Average", "", "", "", "", "Average")
+  label = c("Average", "", "", "", "", "")
 )
+# Call the function with customizable text position
 country_average(
     data = outcomes_weighted_country_lim,
     vars = limitations,
     labels = limitations_labs,
     forma_theme = theme_top_count(size_text = 23, size_title = 28, size_legend = 18, color = "#344771"),
     f_labels_data = limi_labs_text,
-    filter_condition = "str_detect(condition, 'diff')",
-    geom_text_y = 0.15
-    ) %>% forma_axes(
+    label_conditions = label_limit,  # Pass label conditions
+    geom_text_x = "40",  # Custom x position for the text
+    geom_text_y = 0.15    # Custom y position for the text
+) %>% forma_axes(
     bre_age = bre_age, lab_age = lab_age
-    )
+)
 ```
 
 
@@ -698,7 +721,6 @@ indi_coun_regi(
   vars=indicators,
   labs=indicato_labeller
   )
-
 ```
 
 ```{r environ, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
@@ -798,8 +820,14 @@ country_average(
     vars = measures,
     labels = measures_labs_agg,
     forma_theme = theme_top_count(),
-    f_labels_data = meas_labs_text
-    ) %>% forma_axes(bre_age = bre_age, lab_age = lab_age)
+    f_labels_data = meas_labs_text,
+    label_conditions = label_measu,  # Pass label conditions
+    geom_text_x = "40",  # Custom x position for the text
+    geom_text_y = 0.30    # Custom y position for the text
+) %>% forma_axes(
+    bre_age = bre_age, lab_age = lab_age
+)
+
 ```
 
 
@@ -832,9 +860,12 @@ country_average(
     labels = limitations_labs,
     forma_theme = theme_top_count(size_text = 23, size_title = 28, size_legend = 18, color = "#344771"),
     f_labels_data = limi_labs_text,
-    filter_condition = "str_detect(condition, 'diff')",
-    geom_text_y = 0.15
-    ) %>% forma_axes(bre_age = bre_age, lab_age = lab_age)
+    label_conditions = label_limit,  # Pass label conditions
+    geom_text_x = "40",  # Custom x position for the text
+    geom_text_y = 0.20    # Custom y position for the text
+) %>% forma_axes(
+    bre_age = bre_age, lab_age = lab_age
+)
 ```
 
 
