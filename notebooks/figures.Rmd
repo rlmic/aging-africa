@@ -199,16 +199,25 @@ outcomes_nonweighted_country_lim = count_avera(
   subsaharan_nonweighted, limitations
   ) 
 
-
-out_dis_weighted_gender = count_gender(
-  gender_weighted, measures
+out_gen_wgt = count_gender(
+  gen_wgt, measures
   )  
 
-outcomes_weighted_gender = count_gender(
-  gender_weighted, limitations
+out_gen_nwg = count_gender(
+  gen_nwg, measures
   )  
 
-# DATA Fig2C
+lim_gen_wgt = count_gender(
+  gen_wgt, limitations
+  )  
+
+
+lim_gen_nwg = count_gender(
+  gen_nwg, limitations
+  )  
+
+
+# data for fig2c
 fig2c_data <- totpop %>% filter(countryregion != 'Rest of World')
 
 fig2c_labels <- fig2c_data %>% mutate(
@@ -232,7 +241,7 @@ fig2c_labels <- fig2c_data %>% mutate(
   namecountry = if_else(condition == 2075, countryregion, NA_character_)
 )
 
-# DATA Fig2D
+# data for fig2d
 fig2d_data <- over60 %>% filter(countryregion != 'Rest of World')
 
 fig2d_labels <- fig2d_data %>% mutate(
@@ -255,127 +264,11 @@ fig2d_labels <- fig2d_data %>% mutate(
   ),
   namecountry = if_else(condition == 2075, countryregion, NA_character_)
 )
-
-
-```
-
-
-
-
-```{r functions, include=FALSE}
-
-get_count <- function(
-    var
-){
-  ssa0 <- ssa
-  ssa0
-  ssa0$country = ''
-  ssa0$region = "Average"
-  ssa <- bind_rows(ssa0, ssa)
-  annot0 = ssa %>% 
-  filter(
-    age==20 & gender=='Male'
-    ) %>% 
-  group_by(age_group5, country, gender, region) %>% 
-    summarise(vari = mean(get(var), na.rm = TRUE), .groups = 'drop')
-  
-  
-  # Calculate count for age >= 20 and non-NA gender
-  annot1 = ssa %>% 
-    filter(age >= 20 & !is.na(gender)) %>% 
-    group_by(country, gender) %>% 
-    summarise(n = sum(!is.na(country) & !is.na(get(var))), .groups = 'drop') %>%
-    group_by(country) %>% 
-    summarise(n = paste0("N=", scales::comma(sum(n), accuracy = 1)), .groups = 'drop')
-  
-  count <- merge(annot0, annot1, by = "country")
-  
-  return(count)
-}
-
-fac_row_agg_gen_dis <- function(
-  data,
-  vars,
-  labels,
-  forma_theme,
-  size_count = 10
-){
-  condition.labs <- labels
-  names(condition.labs) <- vars
-  data$condition <- factor(data$condition, levels = vars)
-
-  levels(data$age_group5) <- c(levels(data$age_group5), '')
-  
-  # Dynamically generate the number of empty strings based on the length of vars
-  num_conditions <- length(vars)
-  
-  # Adjust the labels dynamically for Male and Female based on num_conditions
-  f_labels <- data.frame(
-    condition = vars,  
-    female = c(rep("Male", 1), rep("", num_conditions - 1)),
-    label = c("Male", rep("", num_conditions - 1))
-  )
-  f_labels$condition = factor(f_labels$condition, levels = vars)
-
-  f_labels2 <- data.frame(
-    condition = vars,  
-    female = c(rep("Female", 1), rep("", num_conditions - 1)),
-    label = c("Female", rep("", num_conditions - 1))
-  )
-  f_labels2$condition = factor(f_labels2$condition, levels = vars)
-
-  f_labels3 <- data.frame(
-    condition = vars,  
-    female = c(rep("", num_conditions - 1), "Female"),
-    label = c(rep("", num_conditions - 1), "Female")
-  )
-  f_labels3$condition = factor(f_labels3$condition, levels = vars)
-
-  f_labels4 <- data.frame(
-    condition = vars,  
-    female = c(rep("", num_conditions - 1), "Male"),
-    label = c(rep("", num_conditions - 1), "Male")
-  )
-  f_labels4$condition = factor(f_labels4$condition, levels = vars)
-
-  data$female <- factor(data$female, levels = c(1, 0), labels = c("Female", "Male"))
-
-  graph <- data %>%  
-    ggplot(
-      aes(x = age_group5, y = measurement, group = female, color = female, linetype = female, size=female)
-    ) + 
-    facet_wrap(
-      . ~ condition, 
-      ncol = 3, 
-      labeller = labeller(condition = condition.labs)
-    ) +
-    geom_rect(
-      aes(xmin = "60", xmax = "80", ymin = -Inf, ymax = Inf),
-      alpha = 0.004,
-      fill = "#344771",
-      color= NA
-    ) +
-    theme_minimal() +
-    geom_line(aes(size = female)) +  # Apply size mapping based on the 'female' variable
-    geom_text(x = "55", y = 0.10, aes(label = label), data = f_labels, size = 9, color = "#050A30") +
-    geom_text(x = "40", y = 0.17, aes(label = label), data = f_labels2, size = 9, color = "#8eb67d") +
-    geom_text(x = "65", y = 0.15, aes(label = label), data = f_labels3, size = 9, color = "#8eb67d") +
-    geom_text(x = "75", y = 0.08, aes(label = label), data = f_labels4, size = 9, color = "#050A30") +
-    scale_fill_manual(values = c("#D3D3D3")) +        
-    scale_color_manual(values = c("Male" = "#050A30", "Female" = "#8eb67d")) +  # Color Female lines with #8eb67d
-    scale_linetype_manual(values = c("Male" = "longdash", "Female" = "solid")) +  # Line types for Male and Female
-    scale_size_manual(values = c("Male" = 1, "Female" = 2)) +  # Thicker line for Female
-    forma_theme
-  
-  return(graph)
-}
-
 ```
 
 
 
 ```{r include=FALSE}
-
 # Plot 2a
 fig2a <- ggplot(totpop, aes(condition, measurement, fill = countryregion, label = countryregion)) +
   geom_area(type = "ridge", bw = 1) +
@@ -562,13 +455,19 @@ country_average(
 ```
 
 
-```{r out_agg_gen_wgt,  echo=FALSE, fig.height=25, fig.width=25, dev = c("png"), dpi=100}
+
+```{r out_gen_wgt,  echo=FALSE, fig.height=25, fig.width=25, dev = c("png"), dpi=100}
 # Figure 4: Employment, Health, & Living Arrangements over the Life Course: by Gender
-fac_row_agg_gen_dis(
-  out_dis_weighted_gender,
+country_gender(
+  out_gen_wgt,
   measures,
   measures_labs_agg,
-  theme_top_count()
+  theme_top_count(),
+vars_with_text=c(
+  "disability", 
+  "depressed", 
+  "notmarried"
+  )
   ) %>% forma_axes(
     bre_age = bre_age, lab_age = lab_age
     )
@@ -601,10 +500,10 @@ country_average(
 )
 ```
 
-```{r dis_agg_gen_wgt, echo=FALSE,  fig.height=12, fig.width=19, dev = c("png"), dpi=100}
+```{r lim_gen_wgt, echo=FALSE,  fig.height=12, fig.width=19, dev = c("png"), dpi=100}
 # Figure 6: Functional Limitations over the Life Course By Gender
-fac_row_agg_gen_dis(
-  outcomes_weighted_gender,
+country_gender(
+  lim_gen_wgt,
   limitations,
   limitations_labs,
   theme_top_count(
@@ -612,7 +511,11 @@ fac_row_agg_gen_dis(
     size_title=28,
     size_legend=18,
     color="#344771"
-    )
+    ),
+  vars_with_text =c(
+  "diff_seei", 
+  "diff_walk_clim"
+  )
   ) %>% forma_axes(
     bre_age = bre_age, lab_age = lab_age
     )
@@ -636,8 +539,6 @@ indi_coun_regi(
   labs=labeller_health
   )
 ```
-
-
 
 
 
@@ -737,7 +638,23 @@ country_average(
 ```
 
 
-#A6
+```{r out_gen_nwg,  echo=FALSE, fig.height=25, fig.width=25, dev = c("png"), dpi=100}
+# Online Appendix Figure A6: Employment, Health, & Living Arrangements over the Life Course: By Gender, no weights
+
+country_gender(
+  out_gen_nwg,
+  measures,
+  measures_labs_agg,
+  theme_top_count(),
+vars_with_text=c(
+  "disability", 
+  "depressed", 
+  "notmarried"
+  )
+  ) %>% forma_axes(
+    bre_age = bre_age, lab_age = lab_age
+    )
+```
 
 ```{r outcomes_gender_nonweighted, echo=FALSE, fig.height=60, fig.width=45, dev = c("png"), dpi=100}
 ## Online Appendix Figure A7: Employment, Health, & Living Arrangements over the Life Course: by Country and Gender, no weights
@@ -775,8 +692,28 @@ country_average(
 ```
 
 
-#A9
+```{r lim_gen_nwg, echo=FALSE,  fig.height=12, fig.width=19, dev = c("png"), dpi=100}
 
+#Online Appendix Figure A9: Functional Limitations over the Life Course: By Gender, no weights
+
+country_gender(
+  lim_gen_nwg,
+  limitations,
+  limitations_labs,
+  theme_top_count(
+    size_text=23,
+    size_title=28,
+    size_legend=18,
+    color="#344771"
+    ),
+  vars_with_text =c(
+  "diff_seei", 
+  "diff_walk_clim"
+  )
+  ) %>% forma_axes(
+    bre_age = bre_age, lab_age = lab_age
+    )
+```
 
 ```{r disabilities_gender_nonweighted, echo=FALSE, fig.height=35, fig.width=45, dev = c("png"), dpi=100}
 #Online Appendix Figure A10: Functional Limitations over the Life Course: by Country and Gender, no weights

@@ -13,7 +13,8 @@ files_to_load <- c(
   "allcountries_means5year_noweights_all.dta",
   "allcountries_means5year_weightspopsurvey_countries.dta",
   "allcountries_means5year_noweights_countries.dta", 
-  "allcountries_means5year_weightspopsurvey_countrygender.dta"
+  "allcountries_means5year_weightspopsurvey_countrygender.dta",
+  "allcountries_means5year_noweights_countrygender.dta"
 )
 
 
@@ -28,7 +29,8 @@ names_datas <- c(
   "subsaharan_nonweighted",
   "countries_weighted",
   "countries_nonweighted", 
-  "gender_weighted"
+  "gen_wgt",
+  "gen_nwg"
 )
 
 

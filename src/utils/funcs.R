@@ -422,6 +422,34 @@ trans_input <- function(data, var_vec, ids, var_nam="condition", val_nam="measur
 }
 
 
+get_count <- function(
+    var
+){
+  ssa0 <- ssa
+  ssa0$country = ''
+  ssa0$region = "Average"
+  ssa <- bind_rows(ssa0, ssa)
+  annot0 = ssa %>% 
+    filter(
+      age==20 & gender=='Male'
+    ) %>% 
+    group_by(age_group5, country, gender, region) %>% 
+    summarise(vari = mean(get(var), na.rm = TRUE), .groups = 'drop')
+  
+  
+  # Calculate count for age >= 20 and non-NA gender
+  annot1 = ssa %>% 
+    filter(age >= 20 & !is.na(gender)) %>% 
+    group_by(country, gender) %>% 
+    summarise(n = sum(!is.na(country) & !is.na(get(var))), .groups = 'drop') %>%
+    group_by(country) %>% 
+    summarise(n = paste0("N=", scales::comma(sum(n), accuracy = 1)), .groups = 'drop')
+  
+  count <- merge(annot0, annot1, by = "country")
+  
+  return(count)
+}
+
 pop_row <- function(
     forma_theme,
     colors = colors_gende,
@@ -909,3 +937,66 @@ count_gender <- function(
     country_transform = FALSE  # No country transformation for gender data
   )
 }
+
+
+country_gender <- function(
+    data,
+    vars,
+    labels,
+    forma_theme,
+    size_count = 9,
+    vars_with_text =NULL
+){
+  condition.labs <- labels
+  names(condition.labs) <- vars
+  data$condition <- factor(data$condition, levels = vars)
+  
+  num_conditions <- length(vars)
+  
+  # Create the labels data frame for Male and Female
+  labels_df <- data.frame(
+    condition = rep(vars, each = 2),  # Each condition will have two labels (Male and Female)
+    label = rep(c("Male", "Female"), times = num_conditions),  # Alternate Male and Female
+    label_color = rep(c("#050A30", "#8eb67d"), times = num_conditions),  # Color for Male and Female
+    stringsAsFactors = FALSE
+  )
+  
+  # Make sure the factor levels match the vars
+  labels_df$condition <- factor(labels_df$condition, levels = vars)
+  labels_df$label[!labels_df$condition %in% vars_with_text] <- ''
+  data$female <- factor(data$female, levels = c(1, 0), labels = c("Female", "Male"))
+  
+  graph <- data %>%  
+    ggplot(
+      aes(x = age_group5, y = measurement, group = female, color = female, linetype = female, size=female)
+    ) + 
+    facet_wrap(
+      . ~ condition, 
+      ncol = 3, 
+      labeller = labeller(condition = condition.labs)
+    ) +
+    geom_rect(
+      aes(xmin = "60", xmax = "80", ymin = -Inf, ymax = Inf),
+      alpha = 0.004,
+      fill = "#344771",
+      color= NA
+    ) +
+    theme_minimal() +
+    geom_line(aes(size = female)) +  # Apply size mapping based on the 'female' variable
+    geom_text(
+      aes(x = "60", y = 0.10, label = label), 
+      data = labels_df[labels_df$label == "Male", ], 
+      size = 9, color = "#050A30", inherit.aes = FALSE) +  # Male label
+    geom_text(
+      aes(x = "40", y = 0.34, label = label), 
+      data = labels_df[labels_df$label == "Female", ], 
+      size = 9, color = "#8eb67d", inherit.aes = FALSE) +  # Female label
+    scale_fill_manual(values = c("#D3D3D3")) +        
+    scale_color_manual(values = c("Male" = "#050A30", "Female" = "#8eb67d")) +  # Color Female lines with #8eb67d
+    scale_linetype_manual(values = c("Male" = "longdash", "Female" = "solid")) +  # Line types for Male and Female
+    scale_size_manual(values = c("Male" = 1, "Female" = 2)) +  # Thicker line for Female
+    forma_theme
+  
+  return(graph)
+}
+
