@@ -175,11 +175,10 @@ dat_long <- prep_data_long(
   countries
 )
 
-
 # Apply the function for each income group
-high_inco <- process_income_group(dat, 'HIC')
-low_middle_inco <- process_income_group(dat, 'LMICs_nonSSA')
-sub_sahar_inco <- process_income_group(dat, 'Sub-Saharan Africa')
+high_inco <- process_income_group(dat, 'HICs', c(indicators, var_hea))
+low_middle_inco <- process_income_group(dat, 'LMICs_nonSSA', c(indicators, var_hea))
+sub_sahar_inco <- process_income_group(dat, 'Sub-Saharan Africa', c(indicators, var_hea))
 
 
 # Main datasets transformed
@@ -354,7 +353,6 @@ fig2d <- base_plot_comp(fig2d_data, '**D.** Over 60 Population (Growth)',
 
 ```
 
-
 ```{r pop_grow, echo=FALSE, fig.height=6, fig.width=5, dev = c("png"), dpi=100}
 # Figure 1: Panel B: Over-60 population (m.)
 newggslopegraph(
@@ -377,23 +375,19 @@ newggslopegraph(
   )
 ```
 
-```{r ov60_pop, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
+```{r pop_o60, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
 # Figure 2: Projected Population Growth and Dependency Ratios
 # Panels A & B
 fig2a | fig2b  
 ```
 
-
-
-
-```{r ov60_growth, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
+```{r gro_o60, echo=FALSE, fig.height=7.5, fig.width=18, dev = c("png"), dpi=100}
 # Figure 2: Projected Population Growth and Dependency Ratios
 # Panels C & D
 fig2c | fig2d
 ```
 
-
-```{r ov60_dep_rat, echo=FALSE, fig.height=7.5, fig.width=18, dev=c("png"), dpi=100}
+```{r dep_rat_o60, echo=FALSE, fig.height=7.5, fig.width=18, dev=c("png"), dpi=100}
 # Figure 2: Projected Population Growth and Dependency Ratios
 # Panels E & F
 depratov60 <- create_dependency_ratio_plot(
@@ -425,8 +419,7 @@ wrap_elements(panel = depratov60  + oldageratov60 ) +
 
 ```
 
-
-```{r out_agg_ctr_wgt, echo=FALSE, fig.height=25, fig.width=25, dev = c("png"), dpi=100}
+```{r out_cou_wgt, echo=FALSE, fig.height=25, fig.width=25, dev = c("png"), dpi=100}
 # Figure 3: Employment, Health, & Living Arrangements over the Life Course: Aggregate
 
 # Define measures and label_conditions
@@ -454,8 +447,6 @@ country_average(
 
 ```
 
-
-
 ```{r out_gen_wgt,  echo=FALSE, fig.height=25, fig.width=25, dev = c("png"), dpi=100}
 # Figure 4: Employment, Health, & Living Arrangements over the Life Course: by Gender
 country_gender(
@@ -473,7 +464,7 @@ vars_with_text=c(
     )
 ```
 
-```{r dis_agg_ctr_wgt, echo=FALSE,  fig.height=12, fig.width=19, dev = c("png"), dpi=100}
+```{r lim_cou_wgt, echo=FALSE,  fig.height=12, fig.width=19, dev = c("png"), dpi=100}
 # Figure 5: Functional Limitations over the Life Course
 
 # Define measures and label_conditions
@@ -521,9 +512,6 @@ country_gender(
     )
 ```
 
-
-
-
 ```{r hea_care, echo=FALSE, fig.height=7.5, fig.width=15, dev = c("png"), dpi=100}
 # Figure 7: Social Protection across Selected Sub-Saharan African Countries
 indi_coun_regi(
@@ -541,9 +529,7 @@ indi_coun_regi(
 ```
 
 
-
-
-```{r ov65_dep_rat, echo=FALSE, fig.height=7.5, fig.width=18, dev=c("png"), dpi=100}
+```{r dep_rat_o65, echo=FALSE, fig.height=7.5, fig.width=18, dev=c("png"), dpi=100}
 # Online Appendix Figure A1: Dependency Ratios (over-65)
 
 depratov65 = create_dependency_ratio_plot(
@@ -575,11 +561,7 @@ wrap_elements(panel = depratov65  + oldageratov65) +
   )
 ```
 
-
-
-
-
-```{r outcomes_gender_weighted, echo=FALSE, fig.height=70, fig.width=45, dev = c("png"), dpi=100}
+```{r out_gen_cou_wgt, echo=FALSE, fig.height=70, fig.width=45, dev = c("png"), dpi=100}
 # Online Appendix Figure A3: Employment, Health, & Living Arrangements over the Life Course by Country and Gender WEIGHTED
 meas_count_gend(
   weighted = TRUE, 
@@ -596,8 +578,7 @@ meas_count_gend(
 )
 ```
 
-
-```{r disabilities_gender_weighted, echo=FALSE, fig.height=35, fig.width=45, dev = c("png"), dpi=100}
+```{r lim_gen_cou_wgt, echo=FALSE, fig.height=35, fig.width=45, dev = c("png"), dpi=100}
 # Online Appendix Figure A4: Functional Limitations over the Life Course by Country and Gender
 meas_count_gend(
   weighted = TRUE, 
@@ -619,7 +600,7 @@ meas_count_gend(
 
 ```
 
-```{r outcomes_aggregate_nonweighted, echo=FALSE,  fig.height=25, fig.width=25, dev = c("png"), dpi=100}
+```{r out_cou_nwg, echo=FALSE,  fig.height=25, fig.width=25, dev = c("png"), dpi=100}
 # Online Appendix Figure A5: Employment, Health, & Living Arrangements over the Life Course: Aggregate, no weights
 
 country_average(
@@ -636,7 +617,6 @@ country_average(
 )
 
 ```
-
 
 ```{r out_gen_nwg,  echo=FALSE, fig.height=25, fig.width=25, dev = c("png"), dpi=100}
 # Online Appendix Figure A6: Employment, Health, & Living Arrangements over the Life Course: By Gender, no weights
@@ -656,7 +636,7 @@ vars_with_text=c(
     )
 ```
 
-```{r outcomes_gender_nonweighted, echo=FALSE, fig.height=60, fig.width=45, dev = c("png"), dpi=100}
+```{r out_gen_cou_nwg, echo=FALSE, fig.height=60, fig.width=45, dev = c("png"), dpi=100}
 ## Online Appendix Figure A7: Employment, Health, & Living Arrangements over the Life Course: by Country and Gender, no weights
 meas_count_gend(
   weighted = FALSE, 
@@ -673,8 +653,7 @@ meas_count_gend(
 )
 ```
 
-
-```{r disabilities_aggregate_nonweighted, echo=FALSE,  fig.height=12, fig.width=19, dev = c("png"), dpi=100}
+```{r lim_cou_nwg, echo=FALSE,  fig.height=12, fig.width=19, dev = c("png"), dpi=100}
 # Online Appendix Figure A8: Functional Limitations over the Life Course: Aggregate, no weights
 
 country_average(
@@ -690,7 +669,6 @@ country_average(
     bre_age = bre_age, lab_age = lab_age
 )
 ```
-
 
 ```{r lim_gen_nwg, echo=FALSE,  fig.height=12, fig.width=19, dev = c("png"), dpi=100}
 
@@ -715,7 +693,7 @@ country_gender(
     )
 ```
 
-```{r disabilities_gender_nonweighted, echo=FALSE, fig.height=35, fig.width=45, dev = c("png"), dpi=100}
+```{r lim_gen_cou_nwg, echo=FALSE, fig.height=35, fig.width=45, dev = c("png"), dpi=100}
 #Online Appendix Figure A10: Functional Limitations over the Life Course: by Country and Gender, no weights
 meas_count_gend(
   weighted = FALSE, 
@@ -735,4 +713,3 @@ meas_count_gend(
   )
 )
 ```
-

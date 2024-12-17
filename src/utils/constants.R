@@ -1,7 +1,16 @@
-# Path to data
+# constants.R - Configuration and Constants for Demographic Analysis
+
+# ---------------------------------
+# 1. PATHS AND DIRECTORIES
+# ---------------------------------
+# Define path to preprocessed data
 data_path <- "../data/preprocessed/"
 
-# List of datasets to load
+# ---------------------------------
+# 2. DATASET NAMES AND FILES
+# ---------------------------------
+# List of datasets to load (ensure filenames are consistent and correct)
+
 files_to_load <- c(
   "allcountries.dta",
   "population_projections_t1.dta",
@@ -17,7 +26,7 @@ files_to_load <- c(
   "allcountries_means5year_noweights_countrygender.dta"
 )
 
-
+# Corresponding names for datasets
 names_datas <- c(
   "ssa",
   "projections",
@@ -33,12 +42,23 @@ names_datas <- c(
   "gen_nwg"
 )
 
+# ---------------------------------
+# 3. CONSTANTS FOR DATA PROCESSING
+# ---------------------------------
 
+# Order of geographical regions or categories
 order <- c("Sub-Saharan Africa", "India", "China", "Rest of World")
+
+# Countries to keep for comparative analysis
 keepobs = c('World', 'India', 'China', 'Sub-Saharan Africa')
 
+# Countries for comparison
 coun_comp <- c("China", "India", "Sub-Saharan Africa")
 
+# ---------------------------------
+# 4. COLOR SCHEMES
+# ---------------------------------
+# Define colors for visualizations
 c_green = "#8eb67d"
 colors_scheme = c("#9b111e", "#1f77b4",  c_green)
 pal = c(
@@ -53,6 +73,18 @@ pal = c(
   
 )
 
+# Gender-based color scheme
+colors_gende =  c("Female" = "#8eb67d", "Male" = "#000C66")
+
+colo = c(
+  "black", 
+  "#3f3f3f", 
+  "#8eb67d"
+)
+
+# ---------------------------------
+# 5. LABELS AND BREAKS FOR PLOTS
+# ---------------------------------
 # Define common label size and other values
 sz_tot <- 6
 size_share <- 6
@@ -107,13 +139,6 @@ var_sum = c(
 )
 
 ids = c("gender", "age_group5")
-
-
-colo = c(
-  "black", 
-  "#3f3f3f", 
-  "#8eb67d"
-)
 
 
 indicators <- c(
@@ -207,8 +232,6 @@ bre_age = c(
   "75",
   "80"
 )
-
-colors_gende =  c("Female" = "#8eb67d", "Male" = "#000C66")
 
 lab_age = c(
   "20", 

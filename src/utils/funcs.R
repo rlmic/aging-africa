@@ -1,9 +1,17 @@
 # Helper function to load datasets
+# This function reads a dataset in .dta format from the specified file path.
+# @param file_name: Name of the file to be loaded.
+# @return A dataframe containing the dataset.
 load_data <- function(file_name) {
   read_dta(file.path(data_path, file_name))
 }
 
-# Function to handle adding "Rest of World" row if data has at least 4 rows
+# Function to handle adding "Rest of World" row
+# Adds a row for "Rest of World" to the dataset by calculating the difference
+# between total and selected rows if the dataset has at least 4 rows.
+# @param data: Dataframe to modify.
+# @param prefix: Prefix for column names to process.
+# @return Modified dataframe with "Rest of World" row added.
 add_rest_of_world <- function(data, prefix) {
   if (nrow(data) >= 4) {
     rest_of_world_values <- as.numeric(as.vector(t(data[4, 2:5]))) - 
@@ -17,6 +25,13 @@ add_rest_of_world <- function(data, prefix) {
 }
 
 # Function to reshape and clean data
+# Converts wide data into a long format, filters out rows where countryregion is "World",
+# and adjusts factors and numeric types.
+# @param data: Dataframe to reshape.
+# @param prefix: Prefix for identifying relevant columns.
+# @param keepobs: (Optional) Rows to keep based on certain conditions.
+# @param order: Custom ordering for countryregion factor levels.
+# @return Cleaned and reshaped dataframe.
 reshape_and_clean <- function(data, prefix, keepobs, order) {
   data %>%
     gather("condition", "measurement", starts_with(prefix), factor_key = TRUE) %>%
@@ -28,7 +43,13 @@ reshape_and_clean <- function(data, prefix, keepobs, order) {
     )
 }
 
-# Processing dep_rat_ov60 and dep_rat_ov65 with additional transformation
+# Processing dependency ratios (e.g., dep_rat_ov60, dep_rat_ov65)
+# Filters and transforms data for selected countries and reshapes it.
+# Adds labels for specific conditions like the year 2100.
+# @param data: Dataframe to process.
+# @param prefix: Prefix for relevant columns.
+# @param countries: List of countries to include in the output.
+# @return Processed dataframe ready for visualization or analysis.
 process_dependency_ratio <- function(data, prefix, countries) {
   data %>%
     filter(countryregion %in% countries) %>%
@@ -44,8 +65,11 @@ process_dependency_ratio <- function(data, prefix, countries) {
     mutate(ratio = round(as.numeric(ratio), 2))
 }
 
-
 # Helper function for cent calculation
+# Computes a custom metric based on the measurement values for specific conditions.
+# @param dat: Input dataframe.
+# @param sel: Number of rows to select for calculations.
+# @return Numeric result of the custom cent calculation.
 cent <- function(dat, sel) {
   dat <- dat[order(dat$countryregion), ]
   tot <- dat %>%
@@ -66,6 +90,10 @@ cent <- function(dat, sel) {
 }
 
 # Helper function for total size calculation
+# Calculates the total measurement for a specific year.
+# @param dat: Input dataframe.
+# @param year: Year to filter on.
+# @return Total measurement for the specified year.
 end_val <- function(dat, year) {
   size <- dat %>%
     filter(condition == year) %>%
@@ -74,21 +102,24 @@ end_val <- function(dat, year) {
   return(size)
 }
 
-# Common annotation function to avoid repetition
+# Common annotation function to avoid repetition in plots
+# @param x: X-coordinate for the annotation.
+# @param y: Y-coordinate for the annotation.
+# @param label: Text label for the annotation.
+# @param color: Text color.
+# @param size: Font size of the annotation.
+# @return ggplot2 annotation layer.
 add_annotation <- function(x, y, label, color, size) {
   annotate("text", x = x, y = y, label = label, hjust = 0, color = color, size = size)
 }
-
 # Common segment function to avoid repetition
 add_segment <- function(x, yend) {
   geom_segment(aes(x = x, xend = x, y = 0, yend = yend), color = "black", size = 0.3)
 }
 
-
 #' Theme for general outcomes in selected countries in Africa, which include
 #' remaining life expectancy, social protection, pension coverage, health care
 #' out of poclet, gov health, n of hospital beds, n of physicians
-
 
 base_theme <- function(
     size_text = 18,
@@ -373,11 +404,11 @@ recode_values <- function(df, column, mapping) {
 }
 
 # Function to process each income group
-process_income_group <- function(data, country_filter) {
+process_income_group <- function(data, country_filter, column_list) {
   data %>%
-    filter(str_detect(country, country_filter)) %>% 
+    filter(country==country_filter) %>%
     select(-cou) %>%
-    gather(variable, value, physicians:uhcidx, factor_key = TRUE)
+    gather(variable, value, all_of(column_list), factor_key = TRUE)
 }
 
 # Function to prepare long format data and assign country-specific order
@@ -998,5 +1029,11 @@ country_gender <- function(
     forma_theme
   
   return(graph)
+}
+
+
+# Function to save plots
+save_plot <- function(plot, filename, width, height, dpi = 100) {
+  ggsave(filename, plot, width = width, height = height, dpi = dpi)
 }
 
